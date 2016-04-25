@@ -88,7 +88,7 @@ KICADPCB::~KICADPCB()
 }
 
 
-bool KICADPCB::ReadFile( const std::string& aFileName )
+bool KICADPCB::ReadFile( const wxString& aFileName )
 {
     // XXX - TO BE IMPLEMENTED
     return false;
@@ -102,14 +102,14 @@ void KICADPCB::SetLogging( bool aUseLog )
 }
 
 
-bool KICADPCB::WriteSTEP( const std::string& aFileName, bool aOverwrite )
+bool KICADPCB::WriteSTEP( const wxString& aFileName, bool aOverwrite )
 {
     // XXX - TO BE IMPLEMENTED
     return false;
 }
 
 
-bool KICADPCB::WriteIGES( const std::string& aFileName, bool aOverwrite )
+bool KICADPCB::WriteIGES( const wxString& aFileName, bool aOverwrite )
 {
     // XXX - TO BE IMPLEMENTED
     return false;

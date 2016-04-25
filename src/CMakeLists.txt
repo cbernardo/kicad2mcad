@@ -1,7 +1,7 @@
 include_directories( pcb )
 
 add_executable( test
-    pcb/main.cpp
+    kicad2mcad.cpp
     pcb/3d_filename_resolver.cpp
     pcb/kicadpcb.cpp
 )

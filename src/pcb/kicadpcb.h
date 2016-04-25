@@ -29,7 +29,7 @@
 #ifndef KICADPCB_H
 #define KICADPCB_H
 
-#include <string>
+#include <wx/string.h>
 #include "3d_filename_resolver.h"
 
 class KICADPCB
@@ -41,10 +41,10 @@ public:
     KICADPCB();
     virtual ~KICADPCB();
 
-    bool ReadFile( const std::string& aFileName );
+    bool ReadFile( const wxString& aFileName );
     void SetLogging( bool aUseLog );
-    bool WriteSTEP( const std::string& aFileName, bool aOverwrite );
-    bool WriteIGES( const std::string& aFileName, bool aOverwrite );
+    bool WriteSTEP( const wxString& aFileName, bool aOverwrite );
+    bool WriteIGES( const wxString& aFileName, bool aOverwrite );
 };
 
 

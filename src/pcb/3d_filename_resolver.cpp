@@ -90,7 +90,6 @@ bool S3D_FILENAME_RESOLVER::Set3DConfigDir( const wxString& aConfigDir )
             {
                 val = cfg->Read( entry, "" );
                 m_EnvVars.insert( std::pair< wxString, wxString >( entry, val ) );
-                std::cerr << "XXX: " << entry.ToUTF8() << " = " << val.ToUTF8() << "\n";
                 entry.clear();
                 val.clear();
             }
@@ -522,7 +521,7 @@ bool S3D_FILENAME_RESOLVER::addPath( const S3D_ALIAS& aPath )
             wxString msg = _( "The given path does not exist" );
             msg.append( wxT( "\n" ) );
             msg.append( tpath.m_pathvar );
-            wxMessageBox( msg, _( "3D model search path" ) );
+            wxLogMessage( "%s\n", msg.ToUTF8() );
         }
 
         tpath.m_pathexp.clear();
