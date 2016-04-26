@@ -21,13 +21,18 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  */
 
-#include "kicadpcb.h"
-
 #include <wx/utils.h>
 #include <wx/filename.h>
+#include <wx/log.h>
 #include <wx/stdpaths.h>
 #include <iostream>
-#include "3d_filename_resolver.h"
+#include <sstream>
+#include <string>
+
+#include "kicadpcb.h"
+#include "sexpr/sexpr.h"
+#include "sexpr/sexpr_parser.h"
+#include "kicadmodule.h"
 
 
 /*
@@ -77,6 +82,7 @@ KICADPCB::KICADPCB()
     wxFileName cfgdir( GetKicadConfigPath(), "" );
     cfgdir.AppendDir( "3d" );
     m_resolver.Set3DConfigDir( cfgdir.GetPath() );
+    m_thickness = 1.6;
 
     return;
 }
@@ -84,14 +90,83 @@ KICADPCB::KICADPCB()
 
 KICADPCB::~KICADPCB()
 {
+    for( KICADMODULE* &i : m_modules )
+        delete i;
+
+    m_modules.clear();
+
     return;
 }
 
 
 bool KICADPCB::ReadFile( const wxString& aFileName )
 {
-    // XXX - TO BE IMPLEMENTED
-    return false;
+    wxFileName fname( aFileName );
+
+    if( fname.GetExt() != "kicad_pcb" )
+    {
+        std::ostringstream ostr;
+        ostr << __FILE__ << ": " << __FUNCTION__ << ": " << __LINE__ << "\n";
+        ostr << "  * expecting extension 'kicad_pcb', got '";
+        ostr << fname.GetExt().ToUTF8() << "'\n";
+        wxLogMessage( "%s\n", ostr.str().c_str() );
+
+        return false;
+    }
+
+    if( !fname.FileExists() )
+    {
+        std::ostringstream ostr;
+        ostr << __FILE__ << ": " << __FUNCTION__ << ": " << __LINE__ << "\n";
+        ostr << "  * no such file: '" << aFileName.ToUTF8() << "'\n";
+        wxLogMessage( "%s\n", ostr.str().c_str() );
+
+        return false;
+    }
+
+    fname.Normalize();
+    m_filename = fname.GetFullPath().ToUTF8();
+
+    try
+    {
+        SEXPR::PARSER parser;
+        std::string infile( fname.GetFullPath().ToUTF8() );
+        SEXPR::SEXPR* data = parser.ParseFromFile( infile );
+
+        if( NULL == data )
+        {
+            std::ostringstream ostr;
+            ostr << "* no data in file: '" << aFileName.ToUTF8() << "'\n";
+            wxLogMessage( "%s\n", ostr.str().c_str() );
+
+            return false;
+        }
+
+        m_resolver.SetProjectDir( fname.GetPath() );
+
+        if( !parsePCB( data ) )
+            return false;
+
+    }
+    catch( std::exception& e )
+    {
+        std::ostringstream ostr;
+        ostr << "* error reading file: '" << aFileName.ToUTF8() << "'\n";
+        ostr << "  * " << e.what() << "\n";
+        wxLogMessage( "%s\n", ostr.str().c_str() );
+
+        return false;
+    }
+    catch( ... )
+    {
+        std::ostringstream ostr;
+        ostr << "* unexpected exception while reading file: '" << aFileName.ToUTF8() << "'\n";
+        wxLogMessage( "%s\n", ostr.str().c_str() );
+
+        return false;
+    }
+
+    return true;
 }
 
 
@@ -113,4 +188,119 @@ bool KICADPCB::WriteIGES( const wxString& aFileName, bool aOverwrite )
 {
     // XXX - TO BE IMPLEMENTED
     return false;
+}
+
+
+bool KICADPCB::parsePCB( SEXPR::SEXPR* data )
+{
+    if( NULL == data )
+        return false;
+
+    if( data->IsList() )
+    {
+        size_t nc = data->GetNumberOfChildren();
+        SEXPR::SEXPR* child = data->GetChild( 0 );
+        std::string name = child->GetSymbol();
+
+        if( name != "kicad_pcb" )
+        {
+            std::ostringstream ostr;
+            ostr << "* data is not a valid PCB file: '" << m_filename << "'\n";
+            wxLogMessage( "%s\n", ostr.str().c_str() );
+            return false;
+        }
+
+        bool result = true;
+
+        for( size_t i = 1; i < nc && result; ++i )
+        {
+            child = data->GetChild( i );
+
+            if( !child->IsList() )
+            {
+                std::ostringstream ostr;
+                ostr << "* corrupt PCB file: '" << m_filename << "'\n";
+                wxLogMessage( "%s\n", ostr.str().c_str() );
+                return false;
+            }
+
+            std::string symname( child->GetChild( 0 )->GetSymbol() );
+
+            if( symname == "general" )
+                result = result && parseGeneral( child );
+            else if( symname == "module" )
+                result = result && parseModule( child );
+            else if( symname == "gr_arc" )
+                result = result && parseShape( child, SHAPE_ARC );
+            else if( symname == "gr_line" )
+                result = result && parseShape( child, SHAPE_LINE );
+            else if( symname == "gr_circle" )
+                result = result && parseShape( child, SHAPE_CIRCLE );
+        }
+
+        return result;
+    }
+
+    std::ostringstream ostr;
+    ostr << "* data is not a valid PCB file: '" << m_filename << "'\n";
+    wxLogMessage( "%s\n", ostr.str().c_str() );
+
+    return false;
+}
+
+
+bool KICADPCB::parseGeneral( SEXPR::SEXPR* data )
+{
+    size_t nc = data->GetNumberOfChildren();
+    SEXPR::SEXPR* child = NULL;
+
+    for( size_t i = 1; i < nc; ++i )
+    {
+        child = data->GetChild( i );
+
+        if( !child->IsList() )
+        {
+            std::ostringstream ostr;
+            ostr << "* corrupt PCB file: '" << m_filename << "'\n";
+            wxLogMessage( "%s\n", ostr.str().c_str() );
+            return false;
+        }
+
+        // at the moment only the thickness is of interest in
+        // the general section
+        if( child->GetChild( 0 )->GetSymbol() != "thickness" )
+            continue;
+
+        m_thickness = child->GetChild( 1 )->GetDouble();
+        return true;
+    }
+
+    std::ostringstream ostr;
+    ostr << "* corrupt PCB file: '" << m_filename << "'\n";
+    ostr << "* no PCB thickness specified in general section\n";
+    wxLogMessage( "%s\n", ostr.str().c_str() );
+
+    return false;
+}
+
+
+bool KICADPCB::parseModule( SEXPR::SEXPR* data )
+{
+    KICADMODULE* mp = new KICADMODULE();
+
+    if( !mp->Read( data ) )
+    {
+        delete mp;
+        return false;
+    }
+
+    m_modules.push_back( mp );
+    return true;
+}
+
+
+bool KICADPCB::parseShape( SEXPR::SEXPR* data, SHAPE_TYPE aShapeType )
+{
+    // XXX - TO BE IMPLEMENTED
+    return true;
 }

@@ -29,16 +29,25 @@
 #ifndef KICADMODULE_H
 #define KICADMODULE_H
 
-class SEXPR::SEXPR;
-class KICADPCB;
+#include "base.h"
+
+namespace SEXPR
+{
+    class SEXPR;
+}
 
 class KICADMODULE
 {
 private:
-    KICADPCB* m_parent;
+    bool parseModel( SEXPR::SEXPR* data );
+    bool parseShape( SEXPR::SEXPR* data, SHAPE_TYPE aShapeType );
+    bool parseLayer( SEXPR::SEXPR* data );
+    bool parsePosition( SEXPR::SEXPR* data );
+    bool parseText( SEXPR::SEXPR* data );
+    bool parsePad( SEXPR::SEXPR* data );
 
 public:
-    KICADMODULE( KICADPCB* aParent );
+    KICADMODULE();
     virtual ~KICADMODULE();
 
     bool Read( SEXPR::SEXPR* aEntry );

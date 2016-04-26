@@ -26,3 +26,15 @@
  * provides declarations of items which are basic to all
  * kicad2mcad code.
  */
+
+#ifndef KICADBASE_H
+#define KICADBASE_H
+
+enum SHAPE_TYPE
+{
+    SHAPE_LINE = 0,
+    SHAPE_ARC,
+    SHAPE_CIRCLE
+};
+
+#endif  // KICADBASE_H

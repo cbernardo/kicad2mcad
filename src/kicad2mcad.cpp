@@ -26,6 +26,7 @@
 #include <wx/log.h>
 #include <wx/string.h>
 #include <wx/filename.h>
+#include <sstream>
 
 #include "kicadpcb.h"
 
@@ -101,7 +102,14 @@ int KICAD2MCAD::OnRun()
     wxFileName fname( m_filename );
 
     if( !fname.FileExists() )
+    {
+        std::ostringstream ostr;
+        ostr << __FILE__ << ": " << __FUNCTION__ << ": " << __LINE__ << "\n";
+        ostr << "  * no such file: '" << m_filename.ToUTF8() << "'\n";
+        wxLogMessage( "%s\n", ostr.str().c_str() );
+
         return -1;
+    }
 
     if( m_fmtIGES )
         fname.SetExt( "igs" );

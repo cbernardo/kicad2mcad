@@ -30,12 +30,32 @@
 #define KICADPCB_H
 
 #include <wx/string.h>
+#include <string>
+#include <vector>
 #include "3d_filename_resolver.h"
+#include "base.h"
+
+namespace SEXPR
+{
+    class SEXPR;
+}
+
+class KICADMODULE;
 
 class KICADPCB
 {
 private:
     S3D_FILENAME_RESOLVER m_resolver;
+    std::string m_filename;
+
+    // PCB parameters/entities
+    double m_thickness;
+    std::vector< KICADMODULE* > m_modules;
+
+    bool parsePCB( SEXPR::SEXPR* data );
+    bool parseGeneral( SEXPR::SEXPR* data );
+    bool parseModule( SEXPR::SEXPR* data );
+    bool parseShape( SEXPR::SEXPR* data, SHAPE_TYPE aShapeType );
 
 public:
     KICADPCB();
