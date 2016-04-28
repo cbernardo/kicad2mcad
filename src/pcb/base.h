@@ -30,11 +30,50 @@
 #ifndef KICADBASE_H
 #define KICADBASE_H
 
+
 enum SHAPE_TYPE
 {
     SHAPE_LINE = 0,
     SHAPE_ARC,
     SHAPE_CIRCLE
+};
+
+/*
+ * Layers of importance to MCAD export:
+ * LAYER_TOP: specifies that a module is on the top of the PCB
+ * LAYER_BOTTOM: specifies that a module is on the bottom of the PCB
+ * LAYER_EDGE: specifies that a Shape is associated with the PCB edge
+ */
+enum LAYERS
+{
+    LAYER_NONE = 0, // no layer specified (bad object)
+    LAYER_TOP,      // top side
+    LAYER_BOTTOM,   // bottom side
+    LAYER_EDGE      // edge data
+};
+
+struct DOUBLET
+{
+    double x;
+    double y;
+
+    DOUBLET() : x( 0.0 ), y( 0.0 ) { return; }
+    DOUBLET( double aX, double aY ) : x( aX ), y( aY ) { return; }
+};
+
+struct TRIPLET
+{
+    double x;
+    double y;
+
+    union
+    {
+        double z;
+        double angle;
+    };
+
+    TRIPLET() : x( 0.0 ), y( 0.0 ), z( 0.0 ) { return; }
+    TRIPLET( double aX, double aY, double aZ ) : x( aX ), y( aY ), z( aZ ) { return; }
 };
 
 #endif  // KICADBASE_H

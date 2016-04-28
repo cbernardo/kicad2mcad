@@ -22,13 +22,17 @@
  */
 
 #include <wx/log.h>
+#include <iostream>
 #include <sstream>
+#include <math.h>
 #include "sexpr/sexpr.h"
 #include "kicadmodule.h"
 
 KICADMODULE::KICADMODULE()
 {
-    // XXX - TO BE IMPLEMENTED
+    m_side = LAYER_NONE;
+    m_rotation = 0.0;
+
     return;
 }
 
@@ -124,21 +128,131 @@ bool KICADMODULE::parseShape( SEXPR::SEXPR* data, SHAPE_TYPE aShapeType )
 
 bool KICADMODULE::parseLayer( SEXPR::SEXPR* data )
 {
-    // XXX - TO BE IMPLEMENTED
+    SEXPR::SEXPR* val = data->GetChild( 1 );
+    std::string layer;
+
+    if( val->IsSymbol() )
+        layer = val->GetSymbol();
+    else if( val->IsString() )
+        layer = val->GetString();
+    else
+    {
+        std::ostringstream ostr;
+        ostr << "* corrupt module in PCB file; layer cannot be parsed\n";
+        wxLogMessage( "%s\n", ostr.str().c_str() );
+        return false;
+    }
+
+    if( layer == "F.Cu" )
+        m_side = LAYER_TOP;
+    else if( layer == "B.Cu" )
+        m_side = LAYER_BOTTOM;
+
     return true;
 }
 
 
 bool KICADMODULE::parsePosition( SEXPR::SEXPR* data )
 {
-    // XXX - TO BE IMPLEMENTED
+    // form: (at X Y {rot})
+    const char bad_position[] = "* corrupt module in PCB file; invalid position";
+    int nchild = data->GetNumberOfChildren();
+
+    if( nchild < 3 )
+    {
+        std::ostringstream ostr;
+        ostr << bad_position;
+        wxLogMessage( "%s\n", ostr.str().c_str() );
+        return false;
+    }
+
+    SEXPR::SEXPR* child = data->GetChild( 1 );
+    double x;
+
+    if( child->IsDouble() )
+        x = child->GetDouble();
+    else if( child->IsInteger() )
+        x = (double) child->GetInteger();
+    else
+    {
+        std::ostringstream ostr;
+        ostr << bad_position;
+        wxLogMessage( "%s\n", ostr.str().c_str() );
+        return false;
+    }
+
+    child = data->GetChild( 2 );
+    double y;
+
+    if( child->IsDouble() )
+        y = child->GetDouble();
+    else if( child->IsInteger() )
+        y = (double) child->GetInteger();
+    else
+    {
+        std::ostringstream ostr;
+        ostr << bad_position;
+        wxLogMessage( "%s\n", ostr.str().c_str() );
+        return false;
+    }
+
+    m_position = DOUBLET( x, y );
+
+    if( nchild == 3 )
+        return true;
+
+    child = data->GetChild( 3 );
+    double angle = 0.0;
+
+    if( child->IsDouble() )
+        angle = child->GetDouble();
+    else if( child->IsInteger() )
+        angle = (double) child->GetInteger();
+    else
+    {
+        std::ostringstream ostr;
+        ostr << bad_position;
+        wxLogMessage( "%s\n", ostr.str().c_str() );
+        return false;
+    }
+
+    while( angle >= 360.0 )
+        angle -= 360.0;
+
+    while( angle <= -360.0 )
+        angle += 360.0;
+
+    m_rotation = (angle / 180.0) * M_PI;
+
     return true;
 }
 
 
 bool KICADMODULE::parseText( SEXPR::SEXPR* data )
 {
-    // XXX - TO BE IMPLEMENTED
+    // we're only interested in the Reference Designator
+    if( data->GetNumberOfChildren() < 3 )
+        return true;
+
+    SEXPR::SEXPR* child = data->GetChild( 1 );
+    std::string text;
+
+    if( child->IsSymbol() )
+        text = child->GetSymbol();
+    else if( child->IsString() )
+        text = child->GetString();
+
+    if( text != "reference" )
+        return true;
+
+    child = data->GetChild( 2 );
+
+    if( child->IsSymbol() )
+        text = child->GetSymbol();
+    else if( child->IsString() )
+        text = child->GetString();
+
+    m_refdes = text;
     return true;
 }
 

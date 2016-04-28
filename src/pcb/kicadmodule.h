@@ -29,12 +29,14 @@
 #ifndef KICADMODULE_H
 #define KICADMODULE_H
 
+#include <string>
 #include "base.h"
 
 namespace SEXPR
 {
     class SEXPR;
 }
+
 
 class KICADMODULE
 {
@@ -45,6 +47,11 @@ private:
     bool parsePosition( SEXPR::SEXPR* data );
     bool parseText( SEXPR::SEXPR* data );
     bool parsePad( SEXPR::SEXPR* data );
+
+    LAYERS      m_side;
+    std::string m_refdes;
+    DOUBLET     m_position;
+    double      m_rotation; // rotation (radians)
 
 public:
     KICADMODULE();
