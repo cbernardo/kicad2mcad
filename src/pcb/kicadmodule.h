@@ -30,6 +30,7 @@
 #define KICADMODULE_H
 
 #include <string>
+#include <vector>
 #include "base.h"
 
 namespace SEXPR
@@ -37,6 +38,8 @@ namespace SEXPR
     class SEXPR;
 }
 
+class KICADPAD;
+class KICADSHAPE;
 
 class KICADMODULE
 {
@@ -52,6 +55,9 @@ private:
     std::string m_refdes;
     DOUBLET     m_position;
     double      m_rotation; // rotation (radians)
+
+    std::vector< KICADPAD* >    m_pads;
+    std::vector< KICADSHAPE* >  m_shapes;
 
 public:
     KICADMODULE();

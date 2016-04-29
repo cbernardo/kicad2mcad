@@ -20,3 +20,47 @@
  * or you may write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  */
+
+/**
+ * @file kicadpad.h
+ * declares the PAD description object.
+ */
+
+#ifndef KICADPAD_H
+#define KICADPAD_H
+
+#include <string>
+#include <vector>
+#include "base.h"
+
+
+struct KICADDRILL
+{
+    DOUBLET size;
+    bool    oval;
+};
+
+
+class KICADPAD
+{
+private:
+    DOUBLET     m_position;
+    double      m_rotation; // rotation (radians)
+    KICADDRILL  m_drill;
+    bool        m_thruhole;
+
+    bool parseDrill( SEXPR::SEXPR* aDrill );
+
+public:
+    KICADPAD();
+    virtual ~KICADPAD();
+
+    bool Read( SEXPR::SEXPR* aEntry );
+
+    bool IsThruHole()
+    {
+        return m_thruhole;
+    }
+};
+
+#endif  // KICADPAD_H

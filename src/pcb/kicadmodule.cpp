@@ -24,9 +24,9 @@
 #include <wx/log.h>
 #include <iostream>
 #include <sstream>
-#include <math.h>
 #include "sexpr/sexpr.h"
 #include "kicadmodule.h"
+#include "kicadpad.h"
 
 KICADMODULE::KICADMODULE()
 {
@@ -42,6 +42,7 @@ KICADMODULE::~KICADMODULE()
     // XXX - TO BE IMPLEMENTED
     return;
 }
+
 
 bool KICADMODULE::Read( SEXPR::SEXPR* aEntry )
 {
@@ -154,77 +155,7 @@ bool KICADMODULE::parseLayer( SEXPR::SEXPR* data )
 
 bool KICADMODULE::parsePosition( SEXPR::SEXPR* data )
 {
-    // form: (at X Y {rot})
-    const char bad_position[] = "* corrupt module in PCB file; invalid position";
-    int nchild = data->GetNumberOfChildren();
-
-    if( nchild < 3 )
-    {
-        std::ostringstream ostr;
-        ostr << bad_position;
-        wxLogMessage( "%s\n", ostr.str().c_str() );
-        return false;
-    }
-
-    SEXPR::SEXPR* child = data->GetChild( 1 );
-    double x;
-
-    if( child->IsDouble() )
-        x = child->GetDouble();
-    else if( child->IsInteger() )
-        x = (double) child->GetInteger();
-    else
-    {
-        std::ostringstream ostr;
-        ostr << bad_position;
-        wxLogMessage( "%s\n", ostr.str().c_str() );
-        return false;
-    }
-
-    child = data->GetChild( 2 );
-    double y;
-
-    if( child->IsDouble() )
-        y = child->GetDouble();
-    else if( child->IsInteger() )
-        y = (double) child->GetInteger();
-    else
-    {
-        std::ostringstream ostr;
-        ostr << bad_position;
-        wxLogMessage( "%s\n", ostr.str().c_str() );
-        return false;
-    }
-
-    m_position = DOUBLET( x, y );
-
-    if( nchild == 3 )
-        return true;
-
-    child = data->GetChild( 3 );
-    double angle = 0.0;
-
-    if( child->IsDouble() )
-        angle = child->GetDouble();
-    else if( child->IsInteger() )
-        angle = (double) child->GetInteger();
-    else
-    {
-        std::ostringstream ostr;
-        ostr << bad_position;
-        wxLogMessage( "%s\n", ostr.str().c_str() );
-        return false;
-    }
-
-    while( angle >= 360.0 )
-        angle -= 360.0;
-
-    while( angle <= -360.0 )
-        angle += 360.0;
-
-    m_rotation = (angle / 180.0) * M_PI;
-
-    return true;
+    return Get2DPositionAndRotation( data, m_position, m_rotation );
 }
 
 
@@ -259,6 +190,14 @@ bool KICADMODULE::parseText( SEXPR::SEXPR* data )
 
 bool KICADMODULE::parsePad( SEXPR::SEXPR* data )
 {
-    // XXX - TO BE IMPLEMENTED
+    KICADPAD* mp = new KICADPAD();
+
+    if( !mp->Read( data ) )
+    {
+        delete mp;
+        return false;
+    }
+
+    m_pads.push_back( mp );
     return true;
 }

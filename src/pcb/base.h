@@ -30,6 +30,10 @@
 #ifndef KICADBASE_H
 #define KICADBASE_H
 
+namespace SEXPR
+{
+    class SEXPR;
+}
 
 enum SHAPE_TYPE
 {
@@ -75,5 +79,7 @@ struct TRIPLET
     TRIPLET() : x( 0.0 ), y( 0.0 ), z( 0.0 ) { return; }
     TRIPLET( double aX, double aY, double aZ ) : x( aX ), y( aY ), z( aZ ) { return; }
 };
+
+bool Get2DPositionAndRotation( SEXPR::SEXPR* data, DOUBLET& aPosition, double& aRotation );
 
 #endif  // KICADBASE_H
