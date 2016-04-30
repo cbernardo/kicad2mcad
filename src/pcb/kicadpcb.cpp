@@ -150,36 +150,6 @@ bool KICADPCB::ReadFile( const wxString& aFileName )
             return false;
 
     }
-    catch( SEXPR::PARSE_EXCEPTION* e )
-    {
-        std::ostringstream ostr;
-        ostr << "* error reading file: '" << aFileName.ToUTF8() << "'\n";
-        ostr << "  * " << e->what() << "\n";
-        wxLogMessage( "%s\n", ostr.str().c_str() );
-        delete e;
-
-        return false;
-    }
-    catch( SEXPR::INVALID_TYPE_EXCEPTION* e )
-    {
-        std::ostringstream ostr;
-        ostr << "* error reading file: '" << aFileName.ToUTF8() << "'\n";
-        ostr << "  * " << e->what() << "\n";
-        wxLogMessage( "%s\n", ostr.str().c_str() );
-        delete e;
-
-        return false;
-    }
-    catch( std::invalid_argument* e )
-    {
-        std::ostringstream ostr;
-        ostr << "* error reading file: '" << aFileName.ToUTF8() << "'\n";
-        ostr << "  * " << e->what() << "\n";
-        wxLogMessage( "%s\n", ostr.str().c_str() );
-        delete e;
-
-        return false;
-    }
     catch( std::exception& e )
     {
         std::ostringstream ostr;

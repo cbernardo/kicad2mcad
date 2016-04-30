@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2016 Mark Roszko <mark.roszko@gmail.com>
  * Copyright (C) 2016 QiEDA Developers
  *
  * This program is free software: you can redistribute it and/or modify
@@ -37,7 +38,7 @@ namespace SEXPR
     {
     }
 
-    SEXPR* PARSER::Parse(const std::string &aString)
+    SEXPR* PARSER::Parse(const std::string &aString) 
     {
         std::string::const_iterator it = aString.begin();
         return parseString(aString, it);
@@ -62,7 +63,7 @@ namespace SEXPR
         auto length = file.tellg();
         if (length < 0)
         {
-            throw new PARSE_EXCEPTION("Error occurred attempting to read in file");
+            throw PARSE_EXCEPTION("Error occurred attempting to read in file");
         }
 
         str.resize(static_cast<size_t>(length));
@@ -129,7 +130,7 @@ namespace SEXPR
                 }
                 else
                 {
-                    throw new PARSE_EXCEPTION("missing closing quote");
+                    throw PARSE_EXCEPTION("missing closing quote");
                 }
             }
             else
@@ -169,7 +170,7 @@ namespace SEXPR
                 }
                 else
                 {
-                    throw new PARSE_EXCEPTION("format error");
+                    throw PARSE_EXCEPTION("format error");
                 }
             }
         }

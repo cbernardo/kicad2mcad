@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2016 Mark Roszko <mark.roszko@gmail.com>
  * Copyright (C) 2016 QiEDA Developers
  *
  * This program is free software: you can redistribute it and/or modify
@@ -193,7 +194,7 @@ namespace SEXPR
 		SEXPR_LIST(int lineNumber) : SEXPR(SEXPR_TYPE_LIST, lineNumber), m_inStreamChild(0) {};
 
 		template <typename... Args>
-		SEXPR_LIST(const Args&... args) : SEXPR(SEXPR_TYPE_LIST), m_inStreamChild(0)
+		SEXPR_LIST(const Args&... args) : SEXPR(SEXPR_TYPE_LIST), m_inStreamChild(0) 
 		{
 			AddChildren(args...);
 		};

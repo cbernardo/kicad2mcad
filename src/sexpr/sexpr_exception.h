@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2016 Mark Roszko <mark.roszko@gmail.com>
  * Copyright (C) 2016 QiEDA Developers
  *
  * This program is free software: you can redistribute it and/or modify
@@ -23,15 +24,15 @@
 
 namespace SEXPR
 {
-	class PARSE_EXCEPTION : public std::exception
-	{
-	public:
-		PARSE_EXCEPTION(const std::string m) :msg(m) {}
-		const char* what() { return msg.c_str(); }
-		virtual ~PARSE_EXCEPTION() throw() {}
-	private:
-		std::string msg;
-	};
+    class PARSE_EXCEPTION : public std::exception
+    {
+    public:
+        PARSE_EXCEPTION(const std::string m) :msg(m) {}
+        const char* what() { return msg.c_str(); }
+        virtual ~PARSE_EXCEPTION() throw() {}
+    private:
+        std::string msg;
+    };
 
 	class INVALID_TYPE_EXCEPTION : public std::exception
 	{

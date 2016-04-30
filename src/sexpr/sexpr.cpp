@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2016 Mark Roszko <mark.roszko@gmail.com>
  * Copyright (C) 2016 QiEDA Developers
  *
  * This program is free software: you can redistribute it and/or modify
@@ -38,17 +39,17 @@ namespace SEXPR
     {
         if (m_type != SEXPR_TYPE_LIST)
         {
-            throw new INVALID_TYPE_EXCEPTION("SEXPR is not a list type!");
+            throw INVALID_TYPE_EXCEPTION("SEXPR is not a list type!");
         }
 
         return &static_cast<SEXPR_LIST const *>(this)->m_children;
     }
-
-    SEXPR* SEXPR::GetChild(size_t idx) const
+    
+    SEXPR* SEXPR::GetChild(size_t idx) const 
     {
         if (m_type != SEXPR_TYPE_LIST)
         {
-            throw new INVALID_TYPE_EXCEPTION("SEXPR is not a list type!");
+            throw INVALID_TYPE_EXCEPTION("SEXPR is not a list type!");
         }
 
         return static_cast<SEXPR_LIST const *>(this)->m_children[idx];
@@ -58,7 +59,7 @@ namespace SEXPR
     {
         if (m_type != SEXPR_TYPE_LIST)
         {
-            throw new INVALID_TYPE_EXCEPTION("SEXPR is not a list type!");
+            throw INVALID_TYPE_EXCEPTION("SEXPR is not a list type!");
         }
 
         SEXPR_LIST* list = static_cast<SEXPR_LIST *>(this);
@@ -70,7 +71,7 @@ namespace SEXPR
     {
         if (m_type != SEXPR_TYPE_LIST)
         {
-            throw new INVALID_TYPE_EXCEPTION("SEXPR is not a list type!");
+            throw INVALID_TYPE_EXCEPTION("SEXPR is not a list type!");
         }
 
         return static_cast<SEXPR_LIST const *>(this)->m_children.size();
@@ -80,7 +81,7 @@ namespace SEXPR
     {
         if (m_type != SEXPR_TYPE_ATOM_STRING)
         {
-            throw new INVALID_TYPE_EXCEPTION("SEXPR is not a string type!");
+            throw INVALID_TYPE_EXCEPTION("SEXPR is not a string type!");
         }
 
         return static_cast<SEXPR_STRING const *>(this)->m_value;
@@ -95,7 +96,7 @@ namespace SEXPR
     {
         if (m_type != SEXPR_TYPE_ATOM_INTEGER)
         {
-            throw new INVALID_TYPE_EXCEPTION("SEXPR is not a integer type!");
+            throw INVALID_TYPE_EXCEPTION("SEXPR is not a integer type!");
         }
 
         return static_cast<SEXPR_INTEGER const *>(this)->m_value;
@@ -115,7 +116,7 @@ namespace SEXPR
         }
         else
         {
-            throw new INVALID_TYPE_EXCEPTION("SEXPR is not a double type!");
+            throw INVALID_TYPE_EXCEPTION("SEXPR is not a double type!");
         }
     }
 
@@ -128,7 +129,7 @@ namespace SEXPR
     {
         if (m_type != SEXPR_TYPE_ATOM_SYMBOL)
         {
-            throw new INVALID_TYPE_EXCEPTION("SEXPR is not a symbol type!");
+            throw INVALID_TYPE_EXCEPTION("SEXPR is not a symbol type!");
         }
 
         return static_cast<SEXPR_SYMBOL const *>(this)->m_value;
@@ -139,7 +140,7 @@ namespace SEXPR
     {
         if (m_type != SEXPR_TYPE_LIST)
         {
-            throw new INVALID_TYPE_EXCEPTION("SEXPR is not a list type!");
+            throw INVALID_TYPE_EXCEPTION("SEXPR is not a list type!");
         }
 
         return static_cast<SEXPR_LIST*>(this);
@@ -206,12 +207,12 @@ namespace SEXPR
 
         m_children.clear();
     }
-
+    
     SEXPR_LIST& operator<< (SEXPR_LIST& list, const ISEXPRABLE& obj)
     {
         SEXPR* sobj = obj.SerializeSEXPR();
         list.AddChild(sobj);
-
+        
         return list;
     }
 
@@ -250,7 +251,7 @@ namespace SEXPR
         list.AddChild(obj);
         return list;
     }
-
+    
     SEXPR_LIST& operator<< (SEXPR_LIST& list, const _OUT_STRING setting)
     {
         SEXPR *res;
@@ -284,7 +285,7 @@ namespace SEXPR
         }
         else
         {
-            throw new std::invalid_argument("SEXPR is not a integer type!");
+            throw std::invalid_argument("SEXPR is not a integer type!");
         }
 
         return input;
@@ -300,7 +301,7 @@ namespace SEXPR
         }
         else
         {
-            throw new std::invalid_argument("SEXPR is not a string type!");
+            throw std::invalid_argument("SEXPR is not a string type!");
         }
 
         return input;
@@ -316,7 +317,7 @@ namespace SEXPR
         }
         else
         {
-            throw new std::invalid_argument("SEXPR is not a long integer type!");
+            throw std::invalid_argument("SEXPR is not a long integer type!");
         }
 
         return input;
@@ -332,7 +333,7 @@ namespace SEXPR
         }
         else
         {
-            throw new std::invalid_argument("SEXPR is not a float type!");
+            throw std::invalid_argument("SEXPR is not a float type!");
         }
 
         return input;
@@ -348,7 +349,7 @@ namespace SEXPR
         }
         else
         {
-            throw new std::invalid_argument("SEXPR is not a double type!");
+            throw std::invalid_argument("SEXPR is not a double type!");
         }
 
         return input;
@@ -366,7 +367,7 @@ namespace SEXPR
             }
             else
             {
-                throw new std::invalid_argument("SEXPR is not a symbol type!");
+                throw std::invalid_argument("SEXPR is not a symbol type!");
             }
         }
         else
@@ -378,7 +379,7 @@ namespace SEXPR
             }
             else
             {
-                throw new std::invalid_argument("SEXPR is not a string type!");
+                throw std::invalid_argument("SEXPR is not a string type!");
             }
         }
 
@@ -392,124 +393,124 @@ namespace SEXPR
         return list;
     }
 
-    size_t SEXPR_LIST::doScan(const SEXPR_SCAN_ARG *args, size_t num_args)
-    {
-        size_t i = 0;
-        for (i = 0; i < num_args; i++)
-        {
-            SEXPR* child = GetChild(i);
-            const SEXPR_SCAN_ARG& arg = args[i];
+	size_t SEXPR_LIST::doScan(const SEXPR_SCAN_ARG *args, size_t num_args)
+	{
+		size_t i = 0;
+		for (i = 0; i < num_args; i++)
+		{
+			SEXPR* child = GetChild(i);
+			const SEXPR_SCAN_ARG& arg = args[i];
 
-            try
-            {
-                if (arg.type == SEXPR_SCAN_ARG::Type::DOUBLE)
-                {
-                    *arg.u.dbl_value = child->GetDouble();
-                }
-                else if (arg.type == SEXPR_SCAN_ARG::Type::INT)
-                {
-                    *arg.u.dbl_value = child->GetInteger();
-                }
-                else if (arg.type == SEXPR_SCAN_ARG::Type::STRING)
-                {
-                    if (child->IsSymbol())
-                    {
-                        *arg.u.str_value = child->GetSymbol();
-                    }
-                    else if (child->IsString())
-                    {
-                        *arg.u.str_value = child->GetString();
-                    }
-                }
-                else if (arg.type == SEXPR_SCAN_ARG::Type::LONGINT)
-                {
-                    *arg.u.lint_value = child->GetLongInteger();
-                }
-                else if (arg.type == SEXPR_SCAN_ARG::Type::SEXPR_STRING)
-                {
-                    if (arg.u.sexpr_str->_Symbol)
-                    {
-                        arg.u.sexpr_str->_String = child->GetSymbol();
-                    }
-                    else
-                    {
-                        arg.u.sexpr_str->_String = child->GetString();
-                    }
+			try
+			{
+				if (arg.type == SEXPR_SCAN_ARG::Type::DOUBLE)
+				{
+					*arg.u.dbl_value = child->GetDouble();
+				}
+				else if (arg.type == SEXPR_SCAN_ARG::Type::INT)
+				{
+					*arg.u.dbl_value = child->GetInteger();
+				}
+				else if (arg.type == SEXPR_SCAN_ARG::Type::STRING)
+				{
+					if (child->IsSymbol())
+					{
+						*arg.u.str_value = child->GetSymbol();
+					}
+					else if (child->IsString())
+					{
+						*arg.u.str_value = child->GetString();
+					}
+				}
+				else if (arg.type == SEXPR_SCAN_ARG::Type::LONGINT)
+				{
+					*arg.u.lint_value = child->GetLongInteger();
+				}
+				else if (arg.type == SEXPR_SCAN_ARG::Type::SEXPR_STRING)
+				{
+					if (arg.u.sexpr_str->_Symbol)
+					{
+						arg.u.sexpr_str->_String = child->GetSymbol();
+					}
+					else
+					{
+						arg.u.sexpr_str->_String = child->GetString();
+					}
 
-                }
-                else if (arg.type == SEXPR_SCAN_ARG::Type::STRING_COMP)
-                {
-                    if (child->IsSymbol())
-                    {
-                        if (child->GetSymbol() != arg.str_value)
-                        {
-                            return i;
-                        }
-                    }
-                    else if (child->IsString())
-                    {
-                        if (child->GetString() != arg.str_value)
-                        {
-                            return i;
-                        }
-                    }
-                }
-                else
-                {
-                    throw new std::invalid_argument("unsupported argument type, this shouldn't have happened");
-                }
-            }
-            catch (INVALID_TYPE_EXCEPTION)
-            {
-                return i;
-            }
-        }
+				}
+				else if (arg.type == SEXPR_SCAN_ARG::Type::STRING_COMP)
+				{
+					if (child->IsSymbol())
+					{
+						if (child->GetSymbol() != arg.str_value)
+						{
+							return i;
+						}
+					}
+					else if (child->IsString())
+					{
+						if (child->GetString() != arg.str_value)
+						{
+							return i;
+						}
+					}
+				}
+				else
+				{
+					throw std::invalid_argument("unsupported argument type, this shouldn't have happened");
+				}
+			}
+			catch (INVALID_TYPE_EXCEPTION)
+			{
+				return i;
+			}
+		}
 
-        return i;
-    }
+		return i;
+	}
 
-    void SEXPR_LIST::doAddChildren(const SEXPR_CHILDREN_ARG *args, size_t num_args)
-    {
-        size_t i = 0;
-        for (i = 0; i < num_args; i++)
-        {
-            const SEXPR_CHILDREN_ARG& arg = args[i];
+	void SEXPR_LIST::doAddChildren(const SEXPR_CHILDREN_ARG *args, size_t num_args)
+	{
+		size_t i = 0;
+		for (i = 0; i < num_args; i++)
+		{
+			const SEXPR_CHILDREN_ARG& arg = args[i];
 
-            if (arg.type == SEXPR_CHILDREN_ARG::Type::DOUBLE)
-            {
-                AddChild(new SEXPR_DOUBLE(arg.u.dbl_value));
-            }
-            else if (arg.type == SEXPR_CHILDREN_ARG::Type::INT)
-            {
-                AddChild(new SEXPR_INTEGER(arg.u.int_value));
-            }
-            else if (arg.type == SEXPR_CHILDREN_ARG::Type::LONGINT)
-            {
-                AddChild(new SEXPR_INTEGER(arg.u.lint_value));
-            }
-            else if (arg.type == SEXPR_CHILDREN_ARG::Type::STRING)
-            {
-                AddChild(new SEXPR_STRING(arg.str_value));
-            }
-            else if (arg.type == SEXPR_CHILDREN_ARG::Type::SEXPR_ATOM)
-            {
-                AddChild(arg.u.sexpr_ptr);
-            }
-            else if (arg.type == SEXPR_CHILDREN_ARG::Type::SEXPR_STRING)
-            {
-                if (arg.u.symbol)
-                {
-                    AddChild(new SEXPR_SYMBOL(arg.str_value));
-                }
-                else
-                {
-                    AddChild(new SEXPR_STRING(arg.str_value));
-                }
-            }
-            else
-            {
-                throw new std::invalid_argument("unexpected argument type, this shouldn't have happened");
-            }
-        }
-    }
+			if (arg.type == SEXPR_CHILDREN_ARG::Type::DOUBLE)
+			{
+				AddChild(new SEXPR_DOUBLE(arg.u.dbl_value));
+			}
+			else if (arg.type == SEXPR_CHILDREN_ARG::Type::INT)
+			{
+				AddChild(new SEXPR_INTEGER(arg.u.int_value));
+			}
+			else if (arg.type == SEXPR_CHILDREN_ARG::Type::LONGINT)
+			{
+				AddChild(new SEXPR_INTEGER(arg.u.lint_value));
+			}
+			else if (arg.type == SEXPR_CHILDREN_ARG::Type::STRING)
+			{
+				AddChild(new SEXPR_STRING(arg.str_value));
+			}
+			else if (arg.type == SEXPR_CHILDREN_ARG::Type::SEXPR_ATOM)
+			{
+				AddChild(arg.u.sexpr_ptr);
+			}
+			else if (arg.type == SEXPR_CHILDREN_ARG::Type::SEXPR_STRING)
+			{
+				if (arg.u.symbol)
+				{
+					AddChild(new SEXPR_SYMBOL(arg.str_value));
+				}
+				else
+				{
+					AddChild(new SEXPR_STRING(arg.str_value));
+				}
+			}
+			else
+			{
+				throw std::invalid_argument("unexpected argument type, this shouldn't have happened");
+			}
+		}
+	}
 }
