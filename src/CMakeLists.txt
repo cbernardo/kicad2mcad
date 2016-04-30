@@ -4,9 +4,11 @@ add_executable( mtest
     kicad2mcad.cpp
     pcb/3d_filename_resolver.cpp
     pcb/base.cpp
+    pcb/kicadmodel.cpp
     pcb/kicadmodule.cpp
     pcb/kicadpad.cpp
     pcb/kicadpcb.cpp
+    pcb/kicadcurve.cpp
     sexpr/sexpr.cpp
     sexpr/sexpr_parser.cpp
 )

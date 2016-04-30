@@ -26,23 +26,24 @@
  * declares the 3D model object.
  */
 
-#ifndef KICADMODULE_H
-#define KICADMODULE_H
+#ifndef KICADMODEL_H
+#define KICADMODEL_H
 
-class SEXPR::SEXPR;
-class KICADPCB;
+#include "base.h"
 
-class KICADMODULE
+class KICADMODEL
 {
 private:
-    KICADPCB* m_parent;
+    std::string m_modelname;
+    TRIPLET     m_scale;
+    TRIPLET     m_offset;
+    TRIPLET     m_rotation;
 
 public:
-    KICADMODULE( KICADPCB* aParent );
-    virtual ~KICADMODULE();
+    KICADMODEL();
+    virtual ~KICADMODEL();
 
     bool Read( SEXPR::SEXPR* aEntry );
-
 };
 
-#endif  // KICADMODULE_H
+#endif  // KICADMODEL_H

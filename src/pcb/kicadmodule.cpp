@@ -25,8 +25,11 @@
 #include <iostream>
 #include <sstream>
 #include "sexpr/sexpr.h"
+#include "kicadmodel.h"
 #include "kicadmodule.h"
 #include "kicadpad.h"
+#include "kicadcurve.h"
+
 
 KICADMODULE::KICADMODULE()
 {
@@ -39,7 +42,15 @@ KICADMODULE::KICADMODULE()
 
 KICADMODULE::~KICADMODULE()
 {
-    // XXX - TO BE IMPLEMENTED
+    for( auto i : m_pads )
+        delete i;
+
+    for( auto i : m_curves )
+        delete i;
+
+    for( auto i : m_models )
+        delete i;
+
     return;
 }
 
@@ -91,11 +102,11 @@ bool KICADMODULE::Read( SEXPR::SEXPR* aEntry )
             else if( symname == "fp_text" )
                 result = result && parseText( child );
             else if( symname == "fp_arc" )
-                result = result && parseShape( child, SHAPE_ARC );
+                result = result && parseCurve( child, CURVE_ARC );
             else if( symname == "fp_line" )
-                result = result && parseShape( child, SHAPE_LINE );
-            else if( symname == "pf_circle" )
-                result = result && parseShape( child, SHAPE_CIRCLE );
+                result = result && parseCurve( child, CURVE_LINE );
+            else if( symname == "fp_circle" )
+                result = result && parseCurve( child, CURVE_CIRCLE );
             else if( symname == "pad" )
                 result = result && parsePad( child );
             else if( symname == "model" )
@@ -115,14 +126,37 @@ bool KICADMODULE::Read( SEXPR::SEXPR* aEntry )
 
 bool KICADMODULE::parseModel( SEXPR::SEXPR* data )
 {
-    // XXX - TO BE IMPLEMENTED
+    KICADMODEL* mp = new KICADMODEL();
+
+    if( !mp->Read( data ) )
+    {
+        delete mp;
+        return false;
+    }
+
+    m_models.push_back( mp );
     return true;
 }
 
 
-bool KICADMODULE::parseShape( SEXPR::SEXPR* data, SHAPE_TYPE aShapeType )
+bool KICADMODULE::parseCurve( SEXPR::SEXPR* data, CURVE_TYPE aCurveType )
 {
-    // XXX - TO BE IMPLEMENTED
+    KICADCURVE* mp = new KICADCURVE();
+
+    if( !mp->Read( data, aCurveType ) )
+    {
+        delete mp;
+        return false;
+    }
+
+    // NOTE: for now we are only interested in glyphs on the outline layer
+    if( LAYER_EDGE != mp->GetLayer() )
+    {
+        delete mp;
+        return true;
+    }
+
+    m_curves.push_back( mp );
     return true;
 }
 
@@ -196,6 +230,14 @@ bool KICADMODULE::parsePad( SEXPR::SEXPR* data )
     {
         delete mp;
         return false;
+    }
+
+    // NOTE: for now we only accept thru-hole pads
+    // for the MCAD description
+    if( mp->IsThruHole() )
+    {
+        delete mp;
+        return true;
     }
 
     m_pads.push_back( mp );

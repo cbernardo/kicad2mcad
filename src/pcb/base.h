@@ -35,18 +35,19 @@ namespace SEXPR
     class SEXPR;
 }
 
-enum SHAPE_TYPE
+enum CURVE_TYPE
 {
-    SHAPE_LINE = 0,
-    SHAPE_ARC,
-    SHAPE_CIRCLE
+    CURVE_NONE = 0, // invalid curve
+    CURVE_LINE,
+    CURVE_ARC,
+    CURVE_CIRCLE
 };
 
 /*
  * Layers of importance to MCAD export:
  * LAYER_TOP: specifies that a module is on the top of the PCB
  * LAYER_BOTTOM: specifies that a module is on the bottom of the PCB
- * LAYER_EDGE: specifies that a Shape is associated with the PCB edge
+ * LAYER_EDGE: specifies that a Curve is associated with the PCB edge
  */
 enum LAYERS
 {
@@ -81,5 +82,8 @@ struct TRIPLET
 };
 
 bool Get2DPositionAndRotation( SEXPR::SEXPR* data, DOUBLET& aPosition, double& aRotation );
+bool Get2DCoordinate( SEXPR::SEXPR* data, DOUBLET& aCoordinate );
+bool Get3DCoordinate( SEXPR::SEXPR* data, TRIPLET& aCoordinate );
+bool GetXYZRotation( SEXPR::SEXPR* data, TRIPLET& aRotation );
 
 #endif  // KICADBASE_H

@@ -33,6 +33,7 @@
 #include "sexpr/sexpr.h"
 #include "sexpr/sexpr_parser.h"
 #include "kicadmodule.h"
+#include "kicadcurve.h"
 
 
 /*
@@ -90,10 +91,11 @@ KICADPCB::KICADPCB()
 
 KICADPCB::~KICADPCB()
 {
-    for( KICADMODULE* &i : m_modules )
+    for( auto i : m_modules )
         delete i;
 
-    m_modules.clear();
+    for( auto i : m_curves )
+        delete i;
 
     return;
 }
@@ -147,6 +149,36 @@ bool KICADPCB::ReadFile( const wxString& aFileName )
         if( !parsePCB( data ) )
             return false;
 
+    }
+    catch( SEXPR::PARSE_EXCEPTION* e )
+    {
+        std::ostringstream ostr;
+        ostr << "* error reading file: '" << aFileName.ToUTF8() << "'\n";
+        ostr << "  * " << e->what() << "\n";
+        wxLogMessage( "%s\n", ostr.str().c_str() );
+        delete e;
+
+        return false;
+    }
+    catch( SEXPR::INVALID_TYPE_EXCEPTION* e )
+    {
+        std::ostringstream ostr;
+        ostr << "* error reading file: '" << aFileName.ToUTF8() << "'\n";
+        ostr << "  * " << e->what() << "\n";
+        wxLogMessage( "%s\n", ostr.str().c_str() );
+        delete e;
+
+        return false;
+    }
+    catch( std::invalid_argument* e )
+    {
+        std::ostringstream ostr;
+        ostr << "* error reading file: '" << aFileName.ToUTF8() << "'\n";
+        ostr << "  * " << e->what() << "\n";
+        wxLogMessage( "%s\n", ostr.str().c_str() );
+        delete e;
+
+        return false;
     }
     catch( std::exception& e )
     {
@@ -231,11 +263,11 @@ bool KICADPCB::parsePCB( SEXPR::SEXPR* data )
             else if( symname == "module" )
                 result = result && parseModule( child );
             else if( symname == "gr_arc" )
-                result = result && parseShape( child, SHAPE_ARC );
+                result = result && parseCurve( child, CURVE_ARC );
             else if( symname == "gr_line" )
-                result = result && parseShape( child, SHAPE_LINE );
+                result = result && parseCurve( child, CURVE_LINE );
             else if( symname == "gr_circle" )
-                result = result && parseShape( child, SHAPE_CIRCLE );
+                result = result && parseCurve( child, CURVE_CIRCLE );
         }
 
         return result;
@@ -299,8 +331,23 @@ bool KICADPCB::parseModule( SEXPR::SEXPR* data )
 }
 
 
-bool KICADPCB::parseShape( SEXPR::SEXPR* data, SHAPE_TYPE aShapeType )
+bool KICADPCB::parseCurve( SEXPR::SEXPR* data, CURVE_TYPE aCurveType )
 {
-    // XXX - TO BE IMPLEMENTED
+    KICADCURVE* mp = new KICADCURVE();
+
+    if( !mp->Read( data, aCurveType ) )
+    {
+        delete mp;
+        return false;
+    }
+
+    // reject any curves not on the Edge.Cuts layer
+    if( mp->GetLayer() != LAYER_EDGE )
+    {
+        delete mp;
+        return true;
+    }
+
+    m_curves.push_back( mp );
     return true;
 }

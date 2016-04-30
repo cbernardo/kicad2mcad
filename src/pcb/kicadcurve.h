@@ -20,3 +20,39 @@
  * or you may write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  */
+
+/**
+ * @file kicadcurve.h
+ * declares the Curve (glyph) object.
+ */
+
+#ifndef KICADCURVE_H
+#define KICADCURVE_H
+
+#include <string>
+#include <vector>
+#include "base.h"
+
+
+class KICADCURVE
+{
+private:
+    CURVE_TYPE m_form;  // form of curve: line, arc, circle
+    DOUBLET    m_start; // start point of line or center for arc and circle
+    DOUBLET    m_end;   // end point of line, first point on arc or circle
+    double     m_angle; // subtended angle of arc
+    LAYERS     m_layer; // layer of the glyph
+
+public:
+    KICADCURVE();
+    virtual ~KICADCURVE();
+
+    bool Read( SEXPR::SEXPR* aEntry, CURVE_TYPE aCurveType );
+
+    LAYERS GetLayer()
+    {
+        return m_layer;
+    }
+};
+
+#endif  // KICADCURVE_H

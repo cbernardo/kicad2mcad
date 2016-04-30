@@ -22,6 +22,7 @@
  */
 
 #include <wx/log.h>
+#include <iostream>
 #include <sstream>
 #include "sexpr/sexpr.h"
 #include "kicadpad.h"
@@ -47,14 +48,6 @@ KICADPAD::~KICADPAD()
 
 bool KICADPAD::Read( SEXPR::SEXPR* aEntry )
 {
-    if( NULL == aEntry )
-    {
-        std::ostringstream ostr;
-        ostr << "* invalid SEXPR pointer (NULL)";
-        wxLogMessage( "%s\n", ostr.str().c_str() );
-        return false;
-    }
-
     // form: ( pad N thru_hole shape (at x y {r}) (size x y) (drill {oval} x {y}) (layers X X X) )
     int nchild = aEntry->GetNumberOfChildren();
 
@@ -99,14 +92,6 @@ bool KICADPAD::Read( SEXPR::SEXPR* aEntry )
 
 bool KICADPAD::parseDrill( SEXPR::SEXPR* aDrill )
 {
-    if( NULL == aDrill )
-    {
-        std::ostringstream ostr;
-        ostr << "* invalid SEXPR pointer (NULL)";
-        wxLogMessage( "%s\n", ostr.str().c_str() );
-        return false;
-    }
-
     // form: (drill {oval} X {Y})
     const char bad_drill[] = "* corrupt module in PCB file; bad drill";
     int nchild = aDrill->GetNumberOfChildren();
@@ -125,7 +110,7 @@ bool KICADPAD::parseDrill( SEXPR::SEXPR* aDrill )
 
     if( child->IsSymbol() )
     {
-        if( child->GetSymbol() == "oval" && nchild == 4 )
+        if( child->GetSymbol() == "oval" && nchild >= 4 )
         {
             m_drill.oval = true;
             child = aDrill->GetChild( ++idx );
@@ -133,7 +118,8 @@ bool KICADPAD::parseDrill( SEXPR::SEXPR* aDrill )
         else
         {
             std::ostringstream ostr;
-            ostr << bad_drill;
+            ostr << bad_drill << " (unexpected symbol: ";
+            ostr << child->GetSymbol() << "), nchild = " << nchild;
             wxLogMessage( "%s\n", ostr.str().c_str() );
             return false;
         }
@@ -148,7 +134,7 @@ bool KICADPAD::parseDrill( SEXPR::SEXPR* aDrill )
     else
     {
         std::ostringstream ostr;
-        ostr << bad_drill;
+        ostr << bad_drill << " (did not find X size)";
         wxLogMessage( "%s\n", ostr.str().c_str() );
         return false;
     }
@@ -160,23 +146,33 @@ bool KICADPAD::parseDrill( SEXPR::SEXPR* aDrill )
         return true;
     }
 
-    child = aDrill->GetChild( idx );
-    double y;
-
-    if( child->IsDouble() )
-        y = child->GetDouble();
-    else if( child->IsInteger() )
-        y = (double) child->GetInteger();
-    else
+    for( int i = idx; i < nchild; ++i )
     {
-        std::ostringstream ostr;
-        ostr << bad_drill;
-        wxLogMessage( "%s\n", ostr.str().c_str() );
-        return false;
-    }
+        child = aDrill->GetChild( i );
 
-    m_drill.size.x = x;
-    m_drill.size.y = y;
+        // NOTE: the Offset of the copper pad is stored
+        // in the drill string but since the copper is not
+        // needed in the MCAD model the Offset is simply ignored.
+        if( !child->IsList() )
+        {
+            double y;
+
+            if( child->IsDouble() )
+                y = child->GetDouble();
+            else if( child->IsInteger() )
+                y = (double) child->GetInteger();
+            else
+            {
+                std::ostringstream ostr;
+                ostr << bad_drill << " (did not find Y size)";
+                wxLogMessage( "%s\n", ostr.str().c_str() );
+                return false;
+            }
+
+            m_drill.size.x = x;
+            m_drill.size.y = y;
+        }
+    }
 
     return true;
 }

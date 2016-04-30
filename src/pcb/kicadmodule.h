@@ -39,13 +39,14 @@ namespace SEXPR
 }
 
 class KICADPAD;
-class KICADSHAPE;
+class KICADCURVE;
+class KICADMODEL;
 
 class KICADMODULE
 {
 private:
     bool parseModel( SEXPR::SEXPR* data );
-    bool parseShape( SEXPR::SEXPR* data, SHAPE_TYPE aShapeType );
+    bool parseCurve( SEXPR::SEXPR* data, CURVE_TYPE aCurveType );
     bool parseLayer( SEXPR::SEXPR* data );
     bool parsePosition( SEXPR::SEXPR* data );
     bool parseText( SEXPR::SEXPR* data );
@@ -57,7 +58,8 @@ private:
     double      m_rotation; // rotation (radians)
 
     std::vector< KICADPAD* >    m_pads;
-    std::vector< KICADSHAPE* >  m_shapes;
+    std::vector< KICADCURVE* >  m_curves;
+    std::vector< KICADMODEL* >  m_models;
 
 public:
     KICADMODULE();
