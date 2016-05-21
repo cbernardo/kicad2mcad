@@ -1,5 +1,5 @@
 /*
- * This program source code file is part kicad2mcad
+ * This program source code file is part of kicad2mcad
  *
  * Copyright (C) 2016 Cirilo Bernardo <cirilo.bernardo@gmail.com>
  *
@@ -42,12 +42,14 @@ namespace SEXPR
 
 class KICADMODULE;
 class KICADCURVE;
+class PCBMODEL;
 
 class KICADPCB
 {
 private:
     S3D_FILENAME_RESOLVER m_resolver;
     std::string m_filename;
+    PCBMODEL*   m_pcb;
 
     // PCB parameters/entities
     double                      m_thickness;
@@ -64,6 +66,7 @@ public:
     virtual ~KICADPCB();
 
     bool ReadFile( const wxString& aFileName );
+    bool ComposePCB();
     void SetLogging( bool aUseLog );
     bool WriteSTEP( const wxString& aFileName, bool aOverwrite );
     bool WriteIGES( const wxString& aFileName, bool aOverwrite );

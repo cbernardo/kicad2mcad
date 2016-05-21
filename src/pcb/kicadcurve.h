@@ -1,5 +1,5 @@
 /*
- * This program source code file is part kicad2mcad
+ * This program source code file is part of kicad2mcad
  *
  * Copyright (C) 2016 Cirilo Bernardo <cirilo.bernardo@gmail.com>
  *

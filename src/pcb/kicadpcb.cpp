@@ -1,5 +1,5 @@
 /*
- * This program source code file is part kicad2mcad
+ * This program source code file is part of kicad2mcad
  *
  * Copyright (C) 2016 Cirilo Bernardo <cirilo.bernardo@gmail.com>
  *
@@ -34,6 +34,7 @@
 #include "sexpr/sexpr_parser.h"
 #include "kicadmodule.h"
 #include "kicadcurve.h"
+#include "oce_utils.h"
 
 
 /*
@@ -84,6 +85,7 @@ KICADPCB::KICADPCB()
     cfgdir.AppendDir( "3d" );
     m_resolver.Set3DConfigDir( cfgdir.GetPath() );
     m_thickness = 1.6;
+    m_pcb = NULL;
 
     return;
 }
@@ -96,6 +98,9 @@ KICADPCB::~KICADPCB()
 
     for( auto i : m_curves )
         delete i;
+
+    if( m_pcb )
+        delete m_pcb;
 
     return;
 }
@@ -181,6 +186,13 @@ void KICADPCB::SetLogging( bool aUseLog )
 
 bool KICADPCB::WriteSTEP( const wxString& aFileName, bool aOverwrite )
 {
+    if( m_pcb )
+    {
+        m_pcb->CreatePCB();
+        std::string filename( aFileName.ToUTF8() );
+        return m_pcb->WriteSTEP( filename, aOverwrite );
+    }
+
     // XXX - TO BE IMPLEMENTED
     return false;
 }
@@ -319,5 +331,45 @@ bool KICADPCB::parseCurve( SEXPR::SEXPR* data, CURVE_TYPE aCurveType )
     }
 
     m_curves.push_back( mp );
+    return true;
+}
+
+
+bool KICADPCB::ComposePCB()
+{
+    if( m_pcb )
+        return true;
+
+    if( m_modules.empty() && m_curves.empty() )
+    {
+        std::ostringstream ostr;
+        ostr << "** " << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "\n";
+        ostr << "*  no PCB data to render\n";
+        wxLogMessage( "%s\n", ostr.str().c_str() );
+        return false;
+    }
+
+    m_pcb = new PCBMODEL();
+    m_pcb->SetPCBThickness( m_thickness );
+
+    for( auto i : m_curves )
+    {
+        m_pcb->AddOutlineSegment( i );
+    }
+
+    for( auto i : m_modules )
+        i->ComposePCB( m_pcb, &m_resolver );
+
+    if( !m_pcb->CreatePCB() )
+    {
+        std::ostringstream ostr;
+        ostr << "** " << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "\n";
+        ostr << "*  could not create PCB solid model\n";
+        wxLogMessage( "%s\n", ostr.str().c_str() );
+        delete m_pcb;
+        m_pcb = NULL;
+        return false;
+    }
+
     return true;
 }

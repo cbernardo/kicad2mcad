@@ -1,5 +1,5 @@
 /*
- * This program source code file is part kicad2mcad
+ * This program source code file is part of kicad2mcad
  *
  * Copyright (C) 2016 Cirilo Bernardo <cirilo.bernardo@gmail.com>
  *
@@ -41,6 +41,8 @@ namespace SEXPR
 class KICADPAD;
 class KICADCURVE;
 class KICADMODEL;
+class PCBMODEL;
+class S3D_FILENAME_RESOLVER;
 
 class KICADMODULE
 {
@@ -67,6 +69,7 @@ public:
 
     bool Read( SEXPR::SEXPR* aEntry );
 
+    bool ComposePCB( class PCBMODEL* aPCB, S3D_FILENAME_RESOLVER* resolver );
 };
 
 #endif  // KICADMODULE_H

@@ -1,5 +1,5 @@
 /*
- * This program source code file is part kicad2mcad
+ * This program source code file is part of kicad2mcad
  *
  * Copyright (C) 2016 Cirilo Bernardo <cirilo.bernardo@gmail.com>
  *
@@ -24,11 +24,14 @@
 #include <wx/log.h>
 #include <iostream>
 #include <sstream>
+
+#include "3d_filename_resolver.h"
 #include "sexpr/sexpr.h"
 #include "kicadmodel.h"
 #include "kicadmodule.h"
 #include "kicadpad.h"
 #include "kicadcurve.h"
+#include "oce_utils.h"
 
 
 KICADMODULE::KICADMODULE()
@@ -241,5 +244,28 @@ bool KICADMODULE::parsePad( SEXPR::SEXPR* data )
     }
 
     m_pads.push_back( mp );
+    return true;
+}
+
+
+bool KICADMODULE::ComposePCB( class PCBMODEL* aPCB, S3D_FILENAME_RESOLVER* resolver )
+{
+    // XXX - TO BE IMPLEMENTED
+    // XXX - translate pads and curves to final position
+    // and append to PCB.
+    /*
+    std::vector< KICADPAD* >    m_pads;
+    std::vector< KICADCURVE* >  m_curves;
+     */
+
+    for( auto i : m_models )
+    {
+        std::string fname( resolver->ResolvePath( i->m_modelname.c_str() ).ToUTF8() );
+        aPCB->AddComponent( fname, m_refdes, LAYER_BOTTOM == m_side ? true : false,
+            m_position, m_rotation, i->m_offset, i->m_rotation );
+    }
+
+    // XXX - TO BE IMPLEMENTED
+    // XXX - ensure we only return true if model data was added
     return true;
 }

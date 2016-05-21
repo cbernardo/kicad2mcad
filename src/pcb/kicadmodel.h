@@ -1,5 +1,5 @@
 /*
- * This program source code file is part kicad2mcad
+ * This program source code file is part of kicad2mcad
  *
  * Copyright (C) 2016 Cirilo Bernardo <cirilo.bernardo@gmail.com>
  *
@@ -31,19 +31,17 @@
 
 #include "base.h"
 
-class KICADMODEL
+struct KICADMODEL
 {
-private:
-    std::string m_modelname;
-    TRIPLET     m_scale;
-    TRIPLET     m_offset;
-    TRIPLET     m_rotation;
-
-public:
     KICADMODEL();
     virtual ~KICADMODEL();
 
     bool Read( SEXPR::SEXPR* aEntry );
+
+    std::string m_modelname;
+    TRIPLET     m_scale;
+    TRIPLET     m_offset;
+    TRIPLET     m_rotation;
 };
 
 #endif  // KICADMODEL_H

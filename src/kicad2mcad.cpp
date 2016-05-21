@@ -1,5 +1,5 @@
 /*
- * This program source code file is part kicad2mcad
+ * This program source code file is part of kicad2mcad
  *
  * Copyright (C) 2016 Cirilo Bernardo <cirilo.bernardo@gmail.com>
  *
@@ -123,6 +123,8 @@ int KICAD2MCAD::OnRun()
     if( pcb.ReadFile( m_filename ) )
     {
         bool res;
+
+        pcb.ComposePCB();
 
         if( m_fmtIGES )
             res = pcb.WriteIGES( outfile, m_overwrite );
