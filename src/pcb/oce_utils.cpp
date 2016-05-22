@@ -30,6 +30,7 @@
 #include <wx/log.h>
 
 #include "oce_utils.h"
+#include "kicadpad.h"
 
 #include <IGESCAFControl_Reader.hxx>
 #include <IGESCAFControl_Writer.hxx>
@@ -167,8 +168,8 @@ bool PCBMODEL::AddOutlineSegment( KICADCURVE* aCurve )
 }
 
 
-// add a drill hole or slot
-bool PCBMODEL::AddDrillHole( KICADDRILL* aDrill )
+// add a pad hole or slot
+bool PCBMODEL::AddPadHole( KICADPAD* aPad )
 {
     // XXX - TO BE IMPLEMENTED
     return false;
@@ -344,27 +345,23 @@ bool PCBMODEL::getModelLocation( bool aBottom, DOUBLET aPosition, double aRotati
     TRIPLET aOffset, TRIPLET aOrientation, TopLoc_Location& aLocation )
 {
     // Order of operations:
-    // a. aOrientation is applied
+    // a. aOrientation is applied -Z*-Y*-X
     // b. aOffset is applied
     //      Top ? add thickness to the Z offset
     // c. Bottom ? Rotate on X axis (in contrast to most ECAD which mirror on Y),
     //             then rotate on +Z
     //    Top ? rotate on -Z
     // d. aPosition is applied
+    //
+    // Note: Y axis is inverted in KiCad
 
     gp_Trsf lPos;
-    lPos.SetTranslation( gp_Vec( aPosition.x, aPosition.y, 0.0 ) );
+    lPos.SetTranslation( gp_Vec( aPosition.x, -aPosition.y, 0.0 ) );
 
     // offset (inches)
     aOffset.x *= 25.4;
-    aOffset.y *= 25.4;
+    aOffset.y *= -25.4;
     aOffset.z *= 25.4 + BOARD_OFFSET;
-
-    std::cerr << "** XXX: model position (" << aPosition.x << ", " << aPosition.y << ")\n";
-    std::cerr << "** XXX: part rotation  (" << aRotation << ")\n";
-    std::cerr << "** XXX: model offset   (" << aOffset.x << ", " << aOffset.y << ", " << aOffset.z << ")\n";
-    std::cerr << "** XXX: model orient.  (" << aOrientation.x << ", " << aOrientation.y << ", " << aOrientation.z << ")\n";
-
     gp_Trsf lRot;
 
     if( aBottom )
@@ -377,7 +374,7 @@ bool PCBMODEL::getModelLocation( bool aBottom, DOUBLET aPosition, double aRotati
     else
     {
         aOffset.z += m_thickness;
-        lRot.SetRotation( gp_Ax1( gp_Pnt( 0.0, 0.0, 0.0 ), gp_Dir( 0.0, 0.0, 1.0 ) ), -aRotation );
+        lRot.SetRotation( gp_Ax1( gp_Pnt( 0.0, 0.0, 0.0 ), gp_Dir( 0.0, 0.0, 1.0 ) ), aRotation );
         lPos.Multiply( lRot );
     }
 
@@ -387,7 +384,7 @@ bool PCBMODEL::getModelLocation( bool aBottom, DOUBLET aPosition, double aRotati
 
     gp_Trsf lOrient;
     lOrient.SetRotation( gp_Ax1( gp_Pnt( 0.0, 0.0, 0.0 ),
-        gp_Dir( 0.0, 0.0, 1.0 ) ), -aOrientation.z );
+       gp_Dir( 0.0, 0.0, 1.0 ) ), -aOrientation.z );
     lPos.Multiply( lOrient );
     lOrient.SetRotation( gp_Ax1( gp_Pnt( 0.0, 0.0, 0.0 ),
         gp_Dir( 0.0, 1.0, 0.0 ) ), -aOrientation.y );

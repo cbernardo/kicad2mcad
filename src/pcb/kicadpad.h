@@ -44,11 +44,7 @@ struct KICADDRILL
 class KICADPAD
 {
 private:
-    DOUBLET     m_position;
-    double      m_rotation; // rotation (radians)
-    KICADDRILL  m_drill;
     bool        m_thruhole;
-
     bool parseDrill( SEXPR::SEXPR* aDrill );
 
 public:
@@ -61,6 +57,10 @@ public:
     {
         return m_thruhole;
     }
+
+    DOUBLET     m_position;
+    double      m_rotation; // rotation (radians)
+    KICADDRILL  m_drill;
 };
 
 #endif  // KICADPAD_H

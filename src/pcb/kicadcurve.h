@@ -36,13 +36,6 @@
 
 class KICADCURVE
 {
-private:
-    CURVE_TYPE m_form;  // form of curve: line, arc, circle
-    DOUBLET    m_start; // start point of line or center for arc and circle
-    DOUBLET    m_end;   // end point of line, first point on arc or circle
-    double     m_angle; // subtended angle of arc
-    LAYERS     m_layer; // layer of the glyph
-
 public:
     KICADCURVE();
     virtual ~KICADCURVE();
@@ -53,6 +46,12 @@ public:
     {
         return m_layer;
     }
+
+    CURVE_TYPE m_form;  // form of curve: line, arc, circle
+    LAYERS     m_layer; // layer of the glyph
+    DOUBLET    m_start; // start point of line or center for arc and circle
+    DOUBLET    m_end;   // end point of line, first point on arc or circle
+    double     m_angle; // subtended angle of arc
 };
 
 #endif  // KICADCURVE_H

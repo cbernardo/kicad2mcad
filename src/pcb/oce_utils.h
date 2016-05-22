@@ -38,7 +38,7 @@ typedef std::pair< std::string, TDF_Label > MODEL_DATUM;
 typedef std::map< std::string, TDF_Label > MODEL_MAP;
 
 class KICADCURVE;
-class KICADDRILL;
+class KICADPAD;
 
 
 class PCBMODEL
@@ -70,11 +70,11 @@ public:
     PCBMODEL();
     virtual ~PCBMODEL();
 
-    // add an outline segment
+    // add an outline segment (must be in final position)
     bool AddOutlineSegment( KICADCURVE* aCurve );
 
-    // add a drill hole or slot
-    bool AddDrillHole( KICADDRILL* aDrill );
+    // add a pad hole or slot (must be in final position)
+    bool AddPadHole( KICADPAD* aPad );
 
     // add a component at the given position and orientation
     bool AddComponent( const std::string& aFileName, const std::string aRefDes,
