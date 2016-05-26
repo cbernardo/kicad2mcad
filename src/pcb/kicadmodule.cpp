@@ -238,7 +238,7 @@ bool KICADMODULE::parsePad( SEXPR::SEXPR* data )
 
     // NOTE: for now we only accept thru-hole pads
     // for the MCAD description
-    if( mp->IsThruHole() )
+    if( !mp->IsThruHole() )
     {
         delete mp;
         return true;
@@ -251,13 +251,7 @@ bool KICADMODULE::parsePad( SEXPR::SEXPR* data )
 
 bool KICADMODULE::ComposePCB( class PCBMODEL* aPCB, S3D_FILENAME_RESOLVER* resolver )
 {
-    // XXX - TO BE IMPLEMENTED
-    // XXX - translate pads and curves to final position and append to PCB.
-    /*
-    std::vector< KICADPAD* >    m_pads;
-    std::vector< KICADCURVE* >  m_curves;
-     */
-
+    // translate pads and curves to final position and append to PCB.
     double dlim = (double)std::numeric_limits< float >::epsilon();
     double vsin;
     double vcos;
@@ -275,7 +269,7 @@ bool KICADMODULE::ComposePCB( class PCBMODEL* aPCB, S3D_FILENAME_RESOLVER* resol
 
     for( auto i : m_curves )
     {
-        if( i->GetLayer() != LAYER_EDGE )
+        if( i->m_layer != LAYER_EDGE || CURVE_NONE == i->m_form )
             continue;
 
         KICADCURVE lcurve = *i;
@@ -284,9 +278,6 @@ bool KICADMODULE::ComposePCB( class PCBMODEL* aPCB, S3D_FILENAME_RESOLVER* resol
         {
             lcurve.m_start.y = -lcurve.m_start.y;
             lcurve.m_end.y = -lcurve.m_end.y;
-        }
-        else
-        {
             lcurve.m_angle = -lcurve.m_angle;
         }
 

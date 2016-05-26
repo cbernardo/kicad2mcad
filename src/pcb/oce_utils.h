@@ -24,21 +24,52 @@
 #ifndef OCE_VIS_OCE_UTILS_H
 #define OCE_VIS_OCE_UTILS_H
 
+#include <list>
 #include <map>
 #include <string>
 #include <utility>
+#include <vector>
 #include "base.h"
+#include "kicadcurve.h"
 
+#include <BRepBuilderAPI_MakeWire.hxx>
 #include <TDocStd_Document.hxx>
 #include <XCAFApp_Application.hxx>
 #include <XCAFDoc_ShapeTool.hxx>
+#include <TopoDS_Shape.hxx>
+#include <TopoDS_Edge.hxx>
 
 
 typedef std::pair< std::string, TDF_Label > MODEL_DATUM;
 typedef std::map< std::string, TDF_Label > MODEL_MAP;
 
-class KICADCURVE;
 class KICADPAD;
+
+class OUTLINE
+{
+private:
+    bool                    m_closed;   // set true if the loop is closed
+
+    bool addEdge( BRepBuilderAPI_MakeWire& aWire, KICADCURVE& aCurve, DOUBLET& aLastPoint );
+    bool testClosed( KICADCURVE& aFrontCurve, KICADCURVE& aBackCurve );
+
+public:
+    std::list< KICADCURVE > m_curves;   // list of contiguous segments
+    OUTLINE();
+    virtual ~OUTLINE();
+
+    void Clear();
+
+    // attempt to add a curve to the outline; on success returns true
+    bool AddSegment( const KICADCURVE& aCurve );
+
+    bool IsClosed()
+    {
+        return m_closed;
+    }
+
+    bool MakeShape( TopoDS_Shape& aShape, double aThickness );
+};
 
 
 class PCBMODEL
@@ -54,6 +85,11 @@ class PCBMODEL
     double                          m_precision;    // model (length unit) numeric precision
     double                          m_angleprec;    // angle numeric precision
     double                          m_thickness;    // PCB thickness, mm
+    double                          m_minx;         // minimum X value in curves (leftmost curve feature)
+    std::list< KICADCURVE >::iterator m_mincurve;   // iterator to the leftmost curve
+
+    std::list< KICADCURVE >     m_curves;
+    std::vector< TopoDS_Shape > m_cutouts;
 
     bool getModelLabel( const std::string aFileName, TDF_Label& aLabel );
 

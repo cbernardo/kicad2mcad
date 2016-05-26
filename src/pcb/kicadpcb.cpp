@@ -188,19 +188,22 @@ bool KICADPCB::WriteSTEP( const wxString& aFileName, bool aOverwrite )
 {
     if( m_pcb )
     {
-        m_pcb->CreatePCB();
         std::string filename( aFileName.ToUTF8() );
         return m_pcb->WriteSTEP( filename, aOverwrite );
     }
 
-    // XXX - TO BE IMPLEMENTED
     return false;
 }
 
 
 bool KICADPCB::WriteIGES( const wxString& aFileName, bool aOverwrite )
 {
-    // XXX - TO BE IMPLEMENTED
+    if( m_pcb )
+    {
+        std::string filename( aFileName.ToUTF8() );
+        return m_pcb->WriteIGES( filename, aOverwrite );
+    }
+
     return false;
 }
 
@@ -354,7 +357,18 @@ bool KICADPCB::ComposePCB()
 
     for( auto i : m_curves )
     {
-        m_pcb->AddOutlineSegment( i );
+        if( CURVE_NONE == i->m_form || LAYER_EDGE != i->m_layer )
+            continue;
+
+        // adjust the coordinate system
+        KICADCURVE lcurve = *i;
+        lcurve.m_start.y = -lcurve.m_start.y;
+        lcurve.m_end.y = -lcurve.m_end.y;
+
+        if( CURVE_ARC == lcurve.m_form )
+            lcurve.m_angle = -lcurve.m_angle;
+
+        m_pcb->AddOutlineSegment( &lcurve );
     }
 
     for( auto i : m_modules )

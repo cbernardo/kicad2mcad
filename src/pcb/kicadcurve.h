@@ -51,6 +51,8 @@ public:
     LAYERS     m_layer; // layer of the glyph
     DOUBLET    m_start; // start point of line or center for arc and circle
     DOUBLET    m_end;   // end point of line, first point on arc or circle
+    DOUBLET    m_ep;    // actual endpoint, to be computed in the case of arcs
+    double     m_radius;// radius; to be computed in the case of arcs and circles
     double     m_angle; // subtended angle of arc
 };
 

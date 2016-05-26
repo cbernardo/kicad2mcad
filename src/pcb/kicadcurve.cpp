@@ -24,6 +24,7 @@
 #include <wx/log.h>
 #include <iostream>
 #include <sstream>
+#include <math.h>
 #include "sexpr/sexpr.h"
 #include "kicadcurve.h"
 
@@ -32,7 +33,9 @@ KICADCURVE::KICADCURVE()
 {
     m_form = CURVE_NONE;
     m_angle = 0.0;
+    m_radius = 0.0;
     m_layer = LAYER_NONE;
+
     return;
 }
 
@@ -105,6 +108,8 @@ bool KICADCURVE::Read( SEXPR::SEXPR* aEntry, CURVE_TYPE aCurveType )
                 m_angle = child->GetChild( 1 )->GetDouble();
             else
                 m_angle = child->GetChild( 1 )->GetInteger();
+
+            m_angle = m_angle / 180.0 * M_PI;
         }
         else if( text == "layer" )
         {

@@ -27,6 +27,8 @@
 #include <wx/string.h>
 #include <wx/filename.h>
 #include <sstream>
+#include <iostream>
+#include <Standard_Failure.hxx>
 
 #include "kicadpcb.h"
 
@@ -124,16 +126,28 @@ int KICAD2MCAD::OnRun()
     {
         bool res;
 
-        pcb.ComposePCB();
+        try
+        {
+            pcb.ComposePCB();
 
-        if( m_fmtIGES )
-            res = pcb.WriteIGES( outfile, m_overwrite );
-        else
-            res = pcb.WriteSTEP( outfile, m_overwrite );
+            if( m_fmtIGES )
+                res = pcb.WriteIGES( outfile, m_overwrite );
+            else
+                res = pcb.WriteSTEP( outfile, m_overwrite );
 
-        if( !res )
+            if( !res )
+                return -1;
+        }
+        catch( Standard_Failure e )
+        {
+            e.Print( std::cerr );
             return -1;
-
+        }
+        catch( ... )
+        {
+            std::cerr << "** (no exception information)\n";
+            return -1;
+        }
     }
 
     return 0;
