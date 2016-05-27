@@ -81,6 +81,7 @@
 #define MIN_LENGTH2 (0.0001)
 
 // XXX - TEST ONLY
+static void printSeg( KICADCURVE& aCurve );
 static void printSegs( std::list< KICADCURVE >& curves );
 
 static void getEndPoints( const KICADCURVE& aCurve, double& spx0, double& spy0,
@@ -121,6 +122,26 @@ static void getCurveEndPoint( const KICADCURVE& aCurve, DOUBLET& aEndPoint )
     return;
 }
 
+
+static void getCurveStartPoint( const KICADCURVE& aCurve, DOUBLET& aStartPoint )
+{
+    if( CURVE_CIRCLE == aCurve.m_form )
+        return; // circles are closed loops and have no end point
+
+    if( CURVE_ARC == aCurve.m_form )
+    {
+        aStartPoint.x = aCurve.m_end.x;
+        aStartPoint.y = aCurve.m_end.y;
+        return;
+    }
+
+    // assume a line
+    aStartPoint.x = aCurve.m_start.x;
+    aStartPoint.y = aCurve.m_start.y;
+    return;
+}
+
+
 static void reverseCurve( KICADCURVE& aCurve )
 {
     if( CURVE_NONE ==  aCurve.m_form || CURVE_CIRCLE == aCurve.m_form )
@@ -133,6 +154,7 @@ static void reverseCurve( KICADCURVE& aCurve )
     }
 
     std::swap( aCurve.m_end, aCurve.m_ep );
+    std::swap( aCurve.m_endangle, aCurve.m_startangle );
     aCurve.m_angle = -aCurve.m_angle;
 
     return;
@@ -250,8 +272,22 @@ bool PCBMODEL::AddOutlineSegment( KICADCURVE* aCurve )
 
         if( CURVE_ARC == aCurve->m_form )
         {
-            double eang = atan2( dy, dx ) + aCurve->m_angle;
+            aCurve->m_startangle = atan2( dy, dx );
 
+            if( aCurve->m_startangle < 0.0 )
+                aCurve->m_startangle += 2.0 * M_PI;
+
+            double eang =  aCurve->m_startangle + aCurve->m_angle;
+
+            if( eang < 0.0 )
+                eang += 2.0 * M_PI;
+
+            if( aCurve->m_angle < 0.0 && eang > aCurve->m_startangle )
+                aCurve->m_startangle += 2.0 * M_PI;
+            else if( aCurve->m_angle >= 0.0 && eang < aCurve->m_startangle )
+                eang += 2.0 * M_PI;
+
+            aCurve->m_endangle = eang;
             aCurve->m_ep.x = aCurve->m_start.x + rad * cos( eang );
             aCurve->m_ep.y = aCurve->m_start.y + rad * sin( eang );
         }
@@ -392,7 +428,8 @@ bool PCBMODEL::AddPadHole( KICADPAD* aPad )
 
     if( !aPad->m_drill.oval )
     {
-        TopoDS_Shape s = BRepPrimAPI_MakeCylinder( aPad->m_drill.size.x, m_thickness * 2.0 ).Shape();
+        TopoDS_Shape s = BRepPrimAPI_MakeCylinder( aPad->m_drill.size.x * 0.5,
+            m_thickness * 2.0 ).Shape();
         gp_Trsf shift;
         shift.SetTranslation( gp_Vec( aPad->m_position.x, aPad->m_position.y, -m_thickness * 0.5 ) );
         BRepBuilderAPI_Transform hole( s, shift );
@@ -400,7 +437,125 @@ bool PCBMODEL::AddPadHole( KICADPAD* aPad )
         return true;
     }
 
-    // XXX - TO BE IMPLEMENTED: slotted hole
+    // slotted hole
+    double angle_offset = 0.0;
+    double rad;     // radius of the slot
+    double hlen;    // half length of the slot
+
+    if( aPad->m_drill.size.x < aPad->m_drill.size.y )
+    {
+        angle_offset = M_PI_2;
+        rad = aPad->m_drill.size.x * 0.5;
+        hlen = aPad->m_drill.size.y * 0.5 - rad;
+    }
+    else
+    {
+        rad = aPad->m_drill.size.y * 0.5;
+        hlen = aPad->m_drill.size.x * 0.5 - rad;
+    }
+
+    DOUBLET c0( -hlen, 0.0 );
+    DOUBLET c1( hlen, 0.0 );
+    DOUBLET p0( -hlen, rad );
+    DOUBLET p1( -hlen, -rad );
+    DOUBLET p2(  hlen, -rad );
+    DOUBLET p3( hlen, rad );
+
+    angle_offset += aPad->m_rotation;
+    double dlim = (double)std::numeric_limits< float >::epsilon();
+
+    if( angle_offset < -dlim || angle_offset > dlim )
+    {
+        double vsin = sin( angle_offset );
+        double vcos = cos( angle_offset );
+
+        double x = c0.x * vcos - c0.y * vsin;
+        double y = c0.x * vsin + c0.y * vcos;
+        c0.x = x;
+        c0.y = y;
+
+        x = c1.x * vcos - c1.y * vsin;
+        y = c1.x * vsin + c1.y * vcos;
+        c1.x = x;
+        c1.y = y;
+
+        x = p0.x * vcos - p0.y * vsin;
+        y = p0.x * vsin + p0.y * vcos;
+        p0.x = x;
+        p0.y = y;
+
+        x = p1.x * vcos - p1.y * vsin;
+        y = p1.x * vsin + p1.y * vcos;
+        p1.x = x;
+        p1.y = y;
+
+        x = p2.x * vcos - p2.y * vsin;
+        y = p2.x * vsin + p2.y * vcos;
+        p2.x = x;
+        p2.y = y;
+
+        x = p3.x * vcos - p3.y * vsin;
+        y = p3.x * vsin + p3.y * vcos;
+        p3.x = x;
+        p3.y = y;
+    }
+
+    c0.x += aPad->m_position.x;
+    c0.y += aPad->m_position.y;
+    c1.x += aPad->m_position.x;
+    c1.y += aPad->m_position.y;
+    p0.x += aPad->m_position.x;
+    p0.y += aPad->m_position.y;
+    p1.x += aPad->m_position.x;
+    p1.y += aPad->m_position.y;
+    p2.x += aPad->m_position.x;
+    p2.y += aPad->m_position.y;
+    p3.x += aPad->m_position.x;
+    p3.y += aPad->m_position.y;
+
+    OUTLINE oln;
+    KICADCURVE crv0, crv1, crv2, crv3;
+
+    // crv0 = arc
+    crv0.m_start = c0;
+    crv0.m_end = p0;
+    crv0.m_ep = p1;
+    crv0.m_angle = M_PI;
+    crv0.m_radius = rad;
+    crv0.m_form = CURVE_ARC;
+
+    // crv1 = line
+    crv1.m_start = p1;
+    crv1.m_end = p2;
+    crv1.m_form = CURVE_LINE;
+
+    // crv2 = arc
+    crv2.m_start = c1;
+    crv2.m_end = p2;
+    crv2.m_ep = p3;
+    crv2.m_angle = M_PI;
+    crv2.m_radius = rad;
+    crv2.m_form = CURVE_ARC;
+
+    // crv3 = line
+    crv3.m_start = p3;
+    crv3.m_end = p0;
+    crv3.m_form = CURVE_LINE;
+
+    oln.AddSegment( crv0 );
+    oln.AddSegment( crv1 );
+    oln.AddSegment( crv2 );
+    oln.AddSegment( crv3 );
+    TopoDS_Shape slot;
+
+    if( oln.MakeShape( slot, m_thickness ) )
+    {
+        if( !slot.IsNull() )
+            m_cutouts.push_back( slot );
+
+        return true;
+    }
+
     return false;
 }
 
@@ -469,7 +624,7 @@ bool PCBMODEL::CreatePCB()
         return true;
     }
 
-    if( m_mincurve == m_curves.end() )
+    if( m_curves.empty() || m_mincurve == m_curves.end() )
     {
         m_hasPCB = true;
         std::ostringstream ostr;
@@ -540,7 +695,7 @@ bool PCBMODEL::CreatePCB()
             {
                 TopoDS_Shape hole;
 
-                if( oln.MakeShape( board, m_thickness ) )
+                if( oln.MakeShape( hole, m_thickness ) )
                 {
                     m_cutouts.push_back( hole );
                 }
@@ -554,8 +709,13 @@ bool PCBMODEL::CreatePCB()
             }
 
             oln.Clear();
-            oln.AddSegment( m_curves.front() );
-            m_curves.pop_front();
+
+            if( !m_curves.empty() )
+            {
+                oln.AddSegment( m_curves.front() );
+                m_curves.pop_front();
+            }
+
             continue;
         }
 
@@ -573,7 +733,7 @@ bool PCBMODEL::CreatePCB()
             ++sC;
         }
 
-        if( sC == eC )
+        if( sC == eC && !oln.m_curves.empty() )
         {
             std::ostringstream ostr;
             ostr << __FILE__ << ": " << __FUNCTION__ << ": " << __LINE__ << "\n";
@@ -581,8 +741,12 @@ bool PCBMODEL::CreatePCB()
             printSegs( oln.m_curves );
             wxLogMessage( "%s\n", ostr.str().c_str() );
             oln.Clear();
-            oln.AddSegment( m_curves.front() );
-            m_curves.pop_front();
+
+            if( !m_curves.empty() )
+            {
+                oln.AddSegment( m_curves.front() );
+                m_curves.pop_front();
+            }
         }
     }
 
@@ -603,7 +767,7 @@ bool PCBMODEL::CreatePCB()
         {
             TopoDS_Shape hole;
 
-            if( oln.MakeShape( board, m_thickness ) )
+            if( oln.MakeShape( hole, m_thickness ) )
             {
                 m_cutouts.push_back( hole );
             }
@@ -618,23 +782,30 @@ bool PCBMODEL::CreatePCB()
     }
 
     // subtract cutouts (if any)
-    if( !m_cutouts.empty() )
+    for( auto i : m_cutouts )
+        board = BRepAlgoAPI_Cut( board, i );
+
+    // push the board to the data structure
+    m_pcb_label = m_assy->AddComponent( m_assy_label, board );
+
+    if( m_pcb_label.IsNull() )
+        return false;
+
+    // color the PCB
+    Handle(XCAFDoc_ColorTool) color =
+        XCAFDoc_DocumentTool::ColorTool( m_doc->Main () );
+    Quantity_Color pcb_green( 0.06, 0.4, 0.06, Quantity_TOC_RGB );
+    color->SetColor( m_pcb_label, pcb_green, XCAFDoc_ColorSurf );
+
+    TopExp_Explorer topex;
+    topex.Init( m_assy->GetShape( m_pcb_label ), TopAbs_SOLID );
+
+    while( topex.More() )
     {
-        BRep_Builder    bld;
-        TopoDS_Compound holes;
-        bld.MakeCompound( holes );
-
-        for( auto i : m_cutouts )
-            bld.Add( holes, i );
-
-        board = BRepAlgoAPI_Cut( board, holes );
+        color->SetColor( topex.Current(), pcb_green, XCAFDoc_ColorSurf );
+        topex.Next();
     }
 
-    // qwerty
-    // XXX - push the board to the data structure
-    m_assy->AddComponent( m_assy_label, board );
-
-    // XXX - TO BE IMPLEMENTED
     return true;
 }
 
@@ -642,7 +813,14 @@ bool PCBMODEL::CreatePCB()
 // write the assembly model in IGES format
 bool PCBMODEL::WriteIGES( const std::string& aFileName, bool aOverwrite )
 {
-    // XXX - check that we have a valid assembly
+    if( m_pcb_label.IsNull() )
+    {
+        std::ostringstream ostr;
+        ostr << __FILE__ << ": " << __FUNCTION__ << ": " << __LINE__ << "\n";
+        ostr << "  * No valid PCB assembly; cannot create output file " << aFileName << "\n";
+        wxLogMessage( "%s\n", ostr.str().c_str() );
+        return false;
+    }
 
     IGESCAFControl_Writer writer;
     writer.SetColorMode( Standard_True );
@@ -659,7 +837,14 @@ bool PCBMODEL::WriteIGES( const std::string& aFileName, bool aOverwrite )
 // write the assembly model in STEP format
 bool PCBMODEL::WriteSTEP( const std::string& aFileName, bool aOverwrite )
 {
-    // XXX - check that we have a valid assembly
+    if( m_pcb_label.IsNull() )
+    {
+        std::ostringstream ostr;
+        ostr << __FILE__ << ": " << __FUNCTION__ << ": " << __LINE__ << "\n";
+        ostr << "  * No valid PCB assembly; cannot create output file " << aFileName << "\n";
+        wxLogMessage( "%s\n", ostr.str().c_str() );
+        return false;
+    }
 
     STEPCAFControl_Writer writer;
     writer.SetColorMode( Standard_True );
@@ -1083,41 +1268,46 @@ bool OUTLINE::AddSegment( const KICADCURVE& aCurve )
 void printSegs( std::list< KICADCURVE >& curves )
 {
     // XXX - TEST ONLY
-    int idx = 0;
     for( auto i : curves )
-    {
-        switch( i.m_form )
-        {
-            case CURVE_LINE:
-                std::cerr << "    [LINE][" << ++idx << "]\n";
-                std::cerr << "        start(" << i.m_start.x << ", " << i.m_start.y << ")\n";
-                std::cerr << "        end(" << i.m_end.x << ", " << i.m_end.y << ")\n";
-                break;
+        printSeg( i );
 
-            case CURVE_CIRCLE:
-                std::cerr << "    [CIRCLE][" << ++idx << "]\n";
-                std::cerr << "        center(" << i.m_start.x << ", " << i.m_start.y << ")\n";
-                std::cerr << "         start(" << i.m_end.x << ", " << i.m_end.y << ")\n";
-                std::cerr << "          rad: " << i.m_radius << "\n";
-                break;
-
-            case CURVE_ARC:
-                std::cerr << "    [ARC][" << ++idx << "]\n";
-                std::cerr << "        center(" << i.m_start.x << ", " << i.m_start.y << ")\n";
-                std::cerr << "         start(" << i.m_end.x << ", " << i.m_end.y << ")\n";
-                std::cerr << "           end(" << i.m_ep.x << ", " << i.m_ep.y << ")\n";
-                std::cerr << "          rad: " << i.m_radius << "\n";
-                std::cerr << "        angle: " << (i.m_angle * 180.0 / M_PI) << "\n";
-                break;
-
-            default:
-                std::cerr << "    [UNKNOWN][" << ++idx << "]\n";
-                break;
-        }
-
-    }
     return;
 }
+
+
+void printSeg( KICADCURVE& aCurve )
+{
+    switch( aCurve.m_form )
+    {
+        case CURVE_LINE:
+            std::cerr << "    [LINE]\n";
+            std::cerr << "        start(" << aCurve.m_start.x << ", " << aCurve.m_start.y << ")\n";
+            std::cerr << "        end(" << aCurve.m_end.x << ", " << aCurve.m_end.y << ")\n";
+            break;
+
+        case CURVE_CIRCLE:
+            std::cerr << "    [CIRCLE]\n";
+            std::cerr << "        center(" << aCurve.m_start.x << ", " << aCurve.m_start.y << ")\n";
+            std::cerr << "         start(" << aCurve.m_end.x << ", " << aCurve.m_end.y << ")\n";
+            std::cerr << "          rad: " << aCurve.m_radius << "\n";
+            break;
+
+        case CURVE_ARC:
+            std::cerr << "    [ARC]\n";
+            std::cerr << "        center(" << aCurve.m_start.x << ", " << aCurve.m_start.y << ")\n";
+            std::cerr << "         start(" << aCurve.m_end.x << ", " << aCurve.m_end.y << ")\n";
+            std::cerr << "           end(" << aCurve.m_ep.x << ", " << aCurve.m_ep.y << ")\n";
+            std::cerr << "          rad: " << aCurve.m_radius << "\n";
+            std::cerr << "        angle: " << (aCurve.m_angle * 180.0 / M_PI) << "\n";
+            break;
+
+        default:
+            std::cerr << "    [UNKNOWN]\n";
+            break;
+    }
+
+}
+
 
 bool OUTLINE::MakeShape( TopoDS_Shape& aShape, double aThickness )
 {
@@ -1136,11 +1326,19 @@ bool OUTLINE::MakeShape( TopoDS_Shape& aShape, double aThickness )
     BRepBuilderAPI_MakeWire wire;
     DOUBLET lastPoint;
     getCurveEndPoint( m_curves.back(), lastPoint );
+    int idx = 0;
 
     for( auto i : m_curves )
     {
-        if( !addEdge( wire, i, lastPoint ) )
+        std::cerr << "** XXX: adding edge #" << ++idx << "\n";
+        if( !addEdge( &wire, i, lastPoint ) )
+        {
+            std::ostringstream ostr;
+            ostr << __FILE__ << ": " << __FUNCTION__ << ": " << __LINE__ << "\n";
+            ostr << "  * failed to add an edge\n";
+            wxLogMessage( "%s\n", ostr.str().c_str() );
             return false;
+        }
     }
 
     TopoDS_Face face = BRepBuilderAPI_MakeFace( wire );
@@ -1160,25 +1358,44 @@ bool OUTLINE::MakeShape( TopoDS_Shape& aShape, double aThickness )
 }
 
 
-bool OUTLINE::addEdge( BRepBuilderAPI_MakeWire& aWire, KICADCURVE& aCurve, DOUBLET& aLastPoint )
+bool OUTLINE::addEdge( BRepBuilderAPI_MakeWire* aWire, KICADCURVE& aCurve, DOUBLET& aLastPoint )
 {
     TopoDS_Edge edge;
     DOUBLET endPoint;
     getCurveEndPoint( aCurve, endPoint );
 
-    // XXX - NOTE: for now we just use lines for everything
+    printSeg( aCurve );
+
+    DOUBLET SP;
+    getCurveStartPoint( aCurve, SP );
+    std::cerr << "*** XXX Previous end : (" << aLastPoint.x << ", " << aLastPoint.y << ")\n";
+    std::cerr << "*** XXX Current start: (" << SP.x << ", " << SP.y << ")\n";
+
     switch( aCurve.m_form )
     {
         case CURVE_LINE:
-            std::cerr << "** XXX: edge from (" << aLastPoint.x << ", " << aLastPoint.y;
-            std::cerr << ") .. (" << endPoint.x << ", " << endPoint.y << ")\n";
             edge = BRepBuilderAPI_MakeEdge( gp_Pnt( aLastPoint.x, aLastPoint.y, 0.0 ),
                 gp_Pnt( endPoint.x, endPoint.y, 0.0 ) );
             break;
 
         case CURVE_ARC:
-            edge = BRepBuilderAPI_MakeEdge( gp_Pnt( aLastPoint.x, aLastPoint.y, 0.0 ),
-                gp_Pnt( endPoint.x, endPoint.y, 0.0 ) );
+            std::cerr << "** XXX: start/end angle, subtended angle: " << aCurve.m_startangle << " .. ";
+            std::cerr << aCurve.m_endangle << " (" << aCurve.m_angle << ")\n";
+
+            do
+            {
+                gp_Circ arc( gp_Ax2( gp_Pnt( aCurve.m_start.x, aCurve.m_start.y, 0.0 ),
+                    gp_Dir( 0.0, 0.0, 1.0 ) ), aCurve.m_radius );
+
+                gp_Pnt sa( aLastPoint.x, aLastPoint.y, 0.0 );
+                gp_Pnt ea( endPoint.x, endPoint.y, 0.0 );
+
+                if( aCurve.m_angle < 0.0 )
+                    edge = BRepBuilderAPI_MakeEdge( arc, ea, sa );
+                else
+                    edge = BRepBuilderAPI_MakeEdge( arc, sa, ea );
+
+            } while( 0 );
             break;
 
         case CURVE_CIRCLE:
@@ -1201,8 +1418,18 @@ bool OUTLINE::addEdge( BRepBuilderAPI_MakeWire& aWire, KICADCURVE& aCurve, DOUBL
     if( edge.IsNull() )
         return false;
 
-    aWire.Add( edge );
     aLastPoint = endPoint;
+    aWire->Add( edge );
+
+    if( BRepBuilderAPI_DisconnectedWire == aWire->Error() )
+    {
+        std::ostringstream ostr;
+        ostr << __FILE__ << ": " << __FUNCTION__ << ": " << __LINE__ << "\n";
+        ostr << "  * failed to add curve\n";
+        wxLogMessage( "%s\n", ostr.str().c_str() );
+
+        return false;
+    }
 
     return true;
 }

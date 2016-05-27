@@ -253,19 +253,10 @@ bool KICADMODULE::ComposePCB( class PCBMODEL* aPCB, S3D_FILENAME_RESOLVER* resol
 {
     // translate pads and curves to final position and append to PCB.
     double dlim = (double)std::numeric_limits< float >::epsilon();
-    double vsin;
-    double vcos;
 
-    if( LAYER_TOP == m_side )
-    {
-        vsin = sin( m_rotation );
-        vcos = cos( m_rotation );
-    }
-    else
-    {
-        vsin = sin( -m_rotation );
-        vcos = cos( -m_rotation );
-    }
+    double vsin = sin( m_rotation );
+    double vcos = cos( m_rotation );
+    bool hasdata = false;
 
     for( auto i : m_curves )
     {
@@ -286,11 +277,11 @@ bool KICADMODULE::ComposePCB( class PCBMODEL* aPCB, S3D_FILENAME_RESOLVER* resol
             double x = lcurve.m_start.x * vcos - lcurve.m_start.y * vsin;
             double y = lcurve.m_start.x * vsin + lcurve.m_start.y * vcos;
             lcurve.m_start.x = x;
-            lcurve.m_start.x = y;
+            lcurve.m_start.y = y;
             x = lcurve.m_end.x * vcos - lcurve.m_end.y * vsin;
             y = lcurve.m_end.x * vsin + lcurve.m_end.y * vcos;
             lcurve.m_end.x = x;
-            lcurve.m_end.x = y;
+            lcurve.m_end.y = y;
         }
 
         lcurve.m_start.x += m_position.x;
@@ -298,7 +289,9 @@ bool KICADMODULE::ComposePCB( class PCBMODEL* aPCB, S3D_FILENAME_RESOLVER* resol
         lcurve.m_end.x += m_position.x;
         lcurve.m_end.y -= m_position.y;
 
-        aPCB->AddOutlineSegment( &lcurve );
+        if( aPCB->AddOutlineSegment( &lcurve ) )
+            hasdata = true;
+
     }
 
     for( auto i : m_pads )
@@ -307,42 +300,33 @@ bool KICADMODULE::ComposePCB( class PCBMODEL* aPCB, S3D_FILENAME_RESOLVER* resol
             continue;
 
         KICADPAD lpad = *i;
-
-        if( LAYER_TOP == m_side )
-        {
-            lpad.m_position.y = -lpad.m_position.y;
-
-            if( lpad.m_drill.oval )
-                lpad.m_rotation += m_rotation;
-        }
-        else
-        {
-            if( lpad.m_drill.oval )
-                lpad.m_rotation += -(lpad.m_rotation + m_rotation);
-        }
+        lpad.m_position.y = -lpad.m_position.y;
 
         if( m_rotation < -dlim || m_rotation > dlim )
         {
             double x = lpad.m_position.x * vcos - lpad.m_position.y * vsin;
             double y = lpad.m_position.x * vsin + lpad.m_position.y * vcos;
             lpad.m_position.x = x;
-            lpad.m_position.x = y;
+            lpad.m_position.y = y;
         }
 
         lpad.m_position.x += m_position.x;
         lpad.m_position.y -= m_position.y;
 
-        aPCB->AddPadHole( &lpad );
+        if( aPCB->AddPadHole( &lpad ) )
+            hasdata = true;
+
     }
 
     for( auto i : m_models )
     {
         std::string fname( resolver->ResolvePath( i->m_modelname.c_str() ).ToUTF8() );
-        aPCB->AddComponent( fname, m_refdes, LAYER_BOTTOM == m_side ? true : false,
-            m_position, m_rotation, i->m_offset, i->m_rotation );
+
+        if( aPCB->AddComponent( fname, m_refdes, LAYER_BOTTOM == m_side ? true : false,
+            m_position, m_rotation, i->m_offset, i->m_rotation ) )
+            hasdata = true;
+
     }
 
-    // XXX - TO BE IMPLEMENTED
-    // XXX - ensure we only return true if model data was added
-    return true;
+    return hasdata;
 }

@@ -54,6 +54,8 @@ public:
     DOUBLET    m_ep;    // actual endpoint, to be computed in the case of arcs
     double     m_radius;// radius; to be computed in the case of arcs and circles
     double     m_angle; // subtended angle of arc
+    double     m_startangle;
+    double     m_endangle;
 };
 
 #endif  // KICADCURVE_H

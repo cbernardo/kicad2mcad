@@ -35,6 +35,8 @@ KICADCURVE::KICADCURVE()
     m_angle = 0.0;
     m_radius = 0.0;
     m_layer = LAYER_NONE;
+    m_startangle = 0.0;
+    m_endangle = 0.0;
 
     return;
 }

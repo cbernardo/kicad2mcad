@@ -50,7 +50,7 @@ class OUTLINE
 private:
     bool                    m_closed;   // set true if the loop is closed
 
-    bool addEdge( BRepBuilderAPI_MakeWire& aWire, KICADCURVE& aCurve, DOUBLET& aLastPoint );
+    bool addEdge( BRepBuilderAPI_MakeWire* aWire, KICADCURVE& aCurve, DOUBLET& aLastPoint );
     bool testClosed( KICADCURVE& aFrontCurve, KICADCURVE& aBackCurve );
 
 public:
