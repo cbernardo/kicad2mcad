@@ -361,8 +361,10 @@ bool KICADPCB::ComposePCB()
 
         // adjust the coordinate system
         KICADCURVE lcurve = *i;
-        lcurve.m_start.y = -lcurve.m_start.y;
-        lcurve.m_end.y = -lcurve.m_end.y;
+        lcurve.m_start.y = -( lcurve.m_start.y - m_origin.y );
+        lcurve.m_end.y = -( lcurve.m_end.y - m_origin.y );
+        lcurve.m_start.x -= m_origin.x;
+        lcurve.m_end.x -= m_origin.x;
 
         if( CURVE_ARC == lcurve.m_form )
             lcurve.m_angle = -lcurve.m_angle;
@@ -371,7 +373,7 @@ bool KICADPCB::ComposePCB()
     }
 
     for( auto i : m_modules )
-        i->ComposePCB( m_pcb, &m_resolver );
+        i->ComposePCB( m_pcb, &m_resolver, m_origin );
 
     if( !m_pcb->CreatePCB() )
     {

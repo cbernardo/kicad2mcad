@@ -68,6 +68,7 @@
 #include <gp_Circ.hxx>
 #include <gp_Dir.hxx>
 #include <gp_Pnt.hxx>
+#include <Geom_Circle.hxx>
 
 #define USER_PREC (1e-4)
 #define USER_ANGLE_PREC (1e-6)
@@ -119,25 +120,6 @@ static void getCurveEndPoint( const KICADCURVE& aCurve, DOUBLET& aEndPoint )
     // assume a line
     aEndPoint.x = aCurve.m_end.x;
     aEndPoint.y = aCurve.m_end.y;
-    return;
-}
-
-
-static void getCurveStartPoint( const KICADCURVE& aCurve, DOUBLET& aStartPoint )
-{
-    if( CURVE_CIRCLE == aCurve.m_form )
-        return; // circles are closed loops and have no end point
-
-    if( CURVE_ARC == aCurve.m_form )
-    {
-        aStartPoint.x = aCurve.m_end.x;
-        aStartPoint.y = aCurve.m_end.y;
-        return;
-    }
-
-    // assume a line
-    aStartPoint.x = aCurve.m_start.x;
-    aStartPoint.y = aCurve.m_start.y;
     return;
 }
 
@@ -256,15 +238,38 @@ bool PCBMODEL::AddOutlineSegment( KICADCURVE* aCurve )
     if( NULL == aCurve || LAYER_EDGE != aCurve->m_layer || CURVE_NONE == aCurve->m_form )
         return false;
 
-    if( CURVE_LINE != aCurve->m_form )
+    if( CURVE_LINE == aCurve->m_form )
     {
-        // ensure that the start and end are not the same point
+        // reject zero - length lines
+        double dx = aCurve->m_end.x - aCurve->m_start.x;
+        double dy = aCurve->m_end.y - aCurve->m_start.y;
+        double distance = dx * dx + dy * dy;
+
+        if( distance < MIN_LENGTH2 )
+        {
+            std::ostringstream ostr;
+            ostr << __FILE__ << ": " << __FUNCTION__ << ": " << __LINE__ << "\n";
+            ostr << "  * rejected a zero-length line\n";
+            wxLogMessage( "%s\n", ostr.str().c_str() );
+            return false;
+        }
+
+    }
+    else
+    {
+        // ensure that the start (center) and end (start of arc) are not the same point
         double dx = aCurve->m_end.x - aCurve->m_start.x;
         double dy = aCurve->m_end.y - aCurve->m_start.y;
         double rad = dx * dx + dy * dy;
 
         if( rad < MIN_LENGTH2 )
+        {
+            std::ostringstream ostr;
+            ostr << __FILE__ << ": " << __FUNCTION__ << ": " << __LINE__ << "\n";
+            ostr << "  * rejected a zero-radius arc or circle\n";
+            wxLogMessage( "%s\n", ostr.str().c_str() );
             return false;
+        }
 
         // calculate the radius and, if applicable, end point
         rad = sqrt( rad );
@@ -290,6 +295,19 @@ bool PCBMODEL::AddOutlineSegment( KICADCURVE* aCurve )
             aCurve->m_endangle = eang;
             aCurve->m_ep.x = aCurve->m_start.x + rad * cos( eang );
             aCurve->m_ep.y = aCurve->m_start.y + rad * sin( eang );
+
+            dx = aCurve->m_ep.x - aCurve->m_end.x;
+            dy = aCurve->m_ep.y - aCurve->m_end.y;
+            rad = dx * dx + dy * dy;
+
+            if( rad < MIN_LENGTH2 )
+            {
+                std::ostringstream ostr;
+                ostr << __FILE__ << ": " << __FUNCTION__ << ": " << __LINE__ << "\n";
+                ostr << "  * rejected an arc with equivalent end points\n";
+                wxLogMessage( "%s\n", ostr.str().c_str() );
+                return false;
+            }
         }
     }
 
@@ -570,7 +588,10 @@ bool PCBMODEL::AddComponent( const std::string& aFileName, const std::string aRe
 
     if( !getModelLabel( aFileName, lmodel ) )
     {
-        std::cerr << "** XXX: NO LABEL\n";
+        std::ostringstream ostr;
+        ostr << __FILE__ << ": " << __FUNCTION__ << ": " << __LINE__ << "\n";
+        ostr << "  * no model for filename '" << aFileName << "'\n";
+        wxLogMessage( "%s\n", ostr.str().c_str() );
         return false;
     }
 
@@ -579,7 +600,10 @@ bool PCBMODEL::AddComponent( const std::string& aFileName, const std::string aRe
 
     if( !getModelLocation( aBottom, aPosition, aRotation, aOffset, aOrientation, toploc ) )
     {
-        std::cerr << "** XXX: NO LOCATION\n";
+        std::ostringstream ostr;
+        ostr << __FILE__ << ": " << __FUNCTION__ << ": " << __LINE__ << "\n";
+        ostr << "  * no location data for filename '" << aFileName << "'\n";
+        wxLogMessage( "%s\n", ostr.str().c_str() );
         return false;
     }
 
@@ -588,7 +612,10 @@ bool PCBMODEL::AddComponent( const std::string& aFileName, const std::string aRe
 
     if( llabel.IsNull() )
     {
-        std::cerr << "** XXX: FAIL (could not add component)\n";
+        std::ostringstream ostr;
+        ostr << __FILE__ << ": " << __FUNCTION__ << ": " << __LINE__ << "\n";
+        ostr << "  * could not add component with filename '" << aFileName << "'\n";
+        wxLogMessage( "%s\n", ostr.str().c_str() );
         return false;
     }
 
@@ -633,41 +660,6 @@ bool PCBMODEL::CreatePCB()
         wxLogMessage( "%s\n", ostr.str().c_str() );
         return false;
     }
-
-    // XXX - START CHECK BLOCK
-    std::cerr << "** XXX: MIN Curve: ";
-
-    switch( m_mincurve->m_form )
-    {
-        case CURVE_LINE:
-            std::cerr << "LINE\n";
-            break;
-
-        case CURVE_CIRCLE:
-            std::cerr << "CIRCLE\n";
-            break;
-
-        case CURVE_ARC:
-            std::cerr << "ARC\n";
-            break;
-
-        default:
-            std::cerr << "UNKNOWN\n";
-            break;
-    }
-
-    std::cerr << "   start(" << m_mincurve->m_start.x << ", " << m_mincurve->m_start.y << ")\n";
-    std::cerr << "     end(" << m_mincurve->m_end.x << ", " << m_mincurve->m_end.y << ")\n";
-
-    if( CURVE_LINE != m_mincurve->m_form )
-    {
-        std::cerr << "     rad: " << m_mincurve->m_radius << "\n";
-
-        if( CURVE_ARC == m_mincurve->m_form )
-            std::cerr << "   angle: " << (m_mincurve->m_angle * 180.0 / M_PI) << "\n";
-
-    }
-    // XXX - END CHECK BLOCK
 
     m_hasPCB = true;    // whether or not operations fail we note that CreatePCB has been invoked
     TopoDS_Shape board;
@@ -880,7 +872,10 @@ bool PCBMODEL::getModelLabel( const std::string aFileName, TDF_Label& aLabel )
         case FMT_IGES:
             if( !readIGES( doc, aFileName.c_str() ) )
             {
-                std::cerr << "** readIGES() failed\n";
+                std::ostringstream ostr;
+                ostr << __FILE__ << ": " << __FUNCTION__ << ": " << __LINE__ << "\n";
+                ostr << "  * readIGES() failed on filename '" << aFileName << "'\n";
+                wxLogMessage( "%s\n", ostr.str().c_str() );
                 return false;
             }
             break;
@@ -888,7 +883,10 @@ bool PCBMODEL::getModelLabel( const std::string aFileName, TDF_Label& aLabel )
         case FMT_STEP:
             if( !readSTEP( doc, aFileName.c_str() ) )
             {
-                std::cerr << "** readSTEP() failed\n";
+                std::ostringstream ostr;
+                ostr << __FILE__ << ": " << __FUNCTION__ << ": " << __LINE__ << "\n";
+                ostr << "  * readSTEP() failed on filename '" << aFileName << "'\n";
+                wxLogMessage( "%s\n", ostr.str().c_str() );
                 return false;
             }
             break;
@@ -903,7 +901,10 @@ bool PCBMODEL::getModelLabel( const std::string aFileName, TDF_Label& aLabel )
 
     if( aLabel.IsNull() )
     {
-        std::cerr << "** XXX: FAILED\n";
+        std::ostringstream ostr;
+        ostr << __FILE__ << ": " << __FUNCTION__ << ": " << __LINE__ << "\n";
+        ostr << "  * could not transfer model data from file '" << aFileName << "'\n";
+        wxLogMessage( "%s\n", ostr.str().c_str() );
         return false;
     }
 
@@ -1320,17 +1321,12 @@ bool OUTLINE::MakeShape( TopoDS_Shape& aShape, double aThickness )
     if( !m_closed )
         return false;   // the loop is not closed
 
-    std::cerr << "** XXX: creating a shape with " << m_curves.size() << " segments\n";
-    printSegs( m_curves );
-
     BRepBuilderAPI_MakeWire wire;
     DOUBLET lastPoint;
     getCurveEndPoint( m_curves.back(), lastPoint );
-    int idx = 0;
 
     for( auto i : m_curves )
     {
-        std::cerr << "** XXX: adding edge #" << ++idx << "\n";
         if( !addEdge( &wire, i, lastPoint ) )
         {
             std::ostringstream ostr;
@@ -1364,13 +1360,6 @@ bool OUTLINE::addEdge( BRepBuilderAPI_MakeWire* aWire, KICADCURVE& aCurve, DOUBL
     DOUBLET endPoint;
     getCurveEndPoint( aCurve, endPoint );
 
-    printSeg( aCurve );
-
-    DOUBLET SP;
-    getCurveStartPoint( aCurve, SP );
-    std::cerr << "*** XXX Previous end : (" << aLastPoint.x << ", " << aLastPoint.y << ")\n";
-    std::cerr << "*** XXX Current start: (" << SP.x << ", " << SP.y << ")\n";
-
     switch( aCurve.m_form )
     {
         case CURVE_LINE:
@@ -1379,9 +1368,6 @@ bool OUTLINE::addEdge( BRepBuilderAPI_MakeWire* aWire, KICADCURVE& aCurve, DOUBL
             break;
 
         case CURVE_ARC:
-            std::cerr << "** XXX: start/end angle, subtended angle: " << aCurve.m_startangle << " .. ";
-            std::cerr << aCurve.m_endangle << " (" << aCurve.m_angle << ")\n";
-
             do
             {
                 gp_Circ arc( gp_Ax2( gp_Pnt( aCurve.m_start.x, aCurve.m_start.y, 0.0 ),
@@ -1445,14 +1431,9 @@ bool OUTLINE::testClosed( KICADCURVE& aFrontCurve, KICADCURVE& aBackCurve )
     double dx = epx1 - spx0;
     double dy = epy1 - spy0;
     double r = dx * dx + dy * dy;
-    std::cerr << "** XXX: (r:" << r << ") ";
 
     if( r < MIN_LENGTH2 )
-    {
-        std::cerr << "[OK]\n";
         return true;
-    }
 
-    std::cerr << "[fail]\n";
     return false;
 }

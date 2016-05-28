@@ -50,6 +50,8 @@ private:
     bool     m_fmtIGES;
     bool     m_overwrite;
     wxString m_filename;
+    double   m_xOrigin;
+    double   m_yOrigin;
 };
 
 static const wxCmdLineEntryDesc cmdLineDesc[] =
@@ -58,8 +60,12 @@ static const wxCmdLineEntryDesc cmdLineDesc[] =
             wxCMD_LINE_VAL_STRING, wxCMD_LINE_OPTION_MANDATORY },
         { wxCMD_LINE_OPTION, "i", NULL, "IGES output (default STEP)",
             wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL },
-        { wxCMD_LINE_OPTION, "x", NULL, "overwrite output file",
+        { wxCMD_LINE_OPTION, "w", NULL, "overwrite output file",
             wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL },
+        { wxCMD_LINE_OPTION, "x", NULL, "X origin of board",
+            wxCMD_LINE_VAL_DOUBLE, wxCMD_LINE_PARAM_OPTIONAL },
+        { wxCMD_LINE_OPTION, "y", NULL, "Y origin of board (pcbnew coordinate system)",
+            wxCMD_LINE_VAL_DOUBLE, wxCMD_LINE_PARAM_OPTIONAL },
         { wxCMD_LINE_SWITCH, "h", NULL, "display this message",
             wxCMD_LINE_VAL_NONE, wxCMD_LINE_OPTION_HELP },
         { wxCMD_LINE_NONE }
@@ -73,6 +79,8 @@ bool KICAD2MCAD::OnInit()
 {
     m_fmtIGES = false;
     m_overwrite = false;
+    m_xOrigin = 0.0;
+    m_yOrigin = 0.0;
 
     if( !wxAppConsole::OnInit() )
         return false;
@@ -94,8 +102,11 @@ bool KICAD2MCAD::OnCmdLineParsed( wxCmdLineParser& parser )
     if( parser.Found( "i" ) )
         m_fmtIGES = true;
 
-    if( parser.Found( "x" ) )
+    if( parser.Found( "w" ) )
         m_overwrite = true;
+
+    parser.Found( "x", &m_xOrigin );
+    parser.Found( "y", &m_yOrigin );
 
     wxString fname;
     parser.Found( "f", &fname );
@@ -127,6 +138,7 @@ int KICAD2MCAD::OnRun()
     wxString outfile = fname.GetFullPath();
 
     KICADPCB pcb;
+    pcb.SetOrigin( m_xOrigin, m_yOrigin );
 
     if( pcb.ReadFile( m_filename ) )
     {

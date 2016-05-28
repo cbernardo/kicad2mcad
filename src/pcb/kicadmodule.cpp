@@ -249,7 +249,7 @@ bool KICADMODULE::parsePad( SEXPR::SEXPR* data )
 }
 
 
-bool KICADMODULE::ComposePCB( class PCBMODEL* aPCB, S3D_FILENAME_RESOLVER* resolver )
+bool KICADMODULE::ComposePCB( class PCBMODEL* aPCB, S3D_FILENAME_RESOLVER* resolver, DOUBLET aOrigin )
 {
     // translate pads and curves to final position and append to PCB.
     double dlim = (double)std::numeric_limits< float >::epsilon();
@@ -257,6 +257,9 @@ bool KICADMODULE::ComposePCB( class PCBMODEL* aPCB, S3D_FILENAME_RESOLVER* resol
     double vsin = sin( m_rotation );
     double vcos = cos( m_rotation );
     bool hasdata = false;
+
+    double posX = m_position.x - aOrigin.x;
+    double posY = m_position.y - aOrigin.y;
 
     for( auto i : m_curves )
     {
@@ -284,10 +287,10 @@ bool KICADMODULE::ComposePCB( class PCBMODEL* aPCB, S3D_FILENAME_RESOLVER* resol
             lcurve.m_end.y = y;
         }
 
-        lcurve.m_start.x += m_position.x;
-        lcurve.m_start.y -= m_position.y;
-        lcurve.m_end.x += m_position.x;
-        lcurve.m_end.y -= m_position.y;
+        lcurve.m_start.x += posX;
+        lcurve.m_start.y -= posY;
+        lcurve.m_end.x += posX;
+        lcurve.m_end.y -= posY;
 
         if( aPCB->AddOutlineSegment( &lcurve ) )
             hasdata = true;
@@ -310,20 +313,22 @@ bool KICADMODULE::ComposePCB( class PCBMODEL* aPCB, S3D_FILENAME_RESOLVER* resol
             lpad.m_position.y = y;
         }
 
-        lpad.m_position.x += m_position.x;
-        lpad.m_position.y -= m_position.y;
+        lpad.m_position.x += posX;
+        lpad.m_position.y -= posY;
 
         if( aPCB->AddPadHole( &lpad ) )
             hasdata = true;
 
     }
 
+    DOUBLET newpos( posX, posY );
+
     for( auto i : m_models )
     {
         std::string fname( resolver->ResolvePath( i->m_modelname.c_str() ).ToUTF8() );
 
         if( aPCB->AddComponent( fname, m_refdes, LAYER_BOTTOM == m_side ? true : false,
-            m_position, m_rotation, i->m_offset, i->m_rotation ) )
+            newpos, m_rotation, i->m_offset, i->m_rotation ) )
             hasdata = true;
 
     }

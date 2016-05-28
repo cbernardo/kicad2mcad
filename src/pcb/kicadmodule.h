@@ -69,7 +69,7 @@ public:
 
     bool Read( SEXPR::SEXPR* aEntry );
 
-    bool ComposePCB( class PCBMODEL* aPCB, S3D_FILENAME_RESOLVER* resolver );
+    bool ComposePCB( class PCBMODEL* aPCB, S3D_FILENAME_RESOLVER* resolver, DOUBLET aOrigin );
 };
 
 #endif  // KICADMODULE_H

@@ -50,6 +50,7 @@ private:
     S3D_FILENAME_RESOLVER m_resolver;
     std::string m_filename;
     PCBMODEL*   m_pcb;
+    DOUBLET     m_origin;
 
     // PCB parameters/entities
     double                      m_thickness;
@@ -64,6 +65,12 @@ private:
 public:
     KICADPCB();
     virtual ~KICADPCB();
+
+    void SetOrigin( double aXOrigin, double aYOrigin )
+    {
+        m_origin.x = aXOrigin;
+        m_origin.y = aYOrigin;
+    }
 
     bool ReadFile( const wxString& aFileName );
     bool ComposePCB();
