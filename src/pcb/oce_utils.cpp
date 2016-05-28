@@ -68,7 +68,6 @@
 #include <gp_Circ.hxx>
 #include <gp_Dir.hxx>
 #include <gp_Pnt.hxx>
-#include <Geom_Circle.hxx>
 
 #define USER_PREC (1e-4)
 #define USER_ANGLE_PREC (1e-6)
