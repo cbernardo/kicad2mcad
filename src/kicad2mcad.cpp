@@ -21,6 +21,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  */
 
+/**
+ * TODO:
+ * 1. At the moment the resolver is not aware of any locally
+ * defined paths which may be set via pcbnew->ConfigurePaths()
+ */
+
 #include <wx/app.h>
 #include <wx/cmdline.h>
 #include <wx/log.h>

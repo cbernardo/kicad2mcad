@@ -133,6 +133,7 @@ bool KICADPCB::ReadFile( const wxString& aFileName )
 
     fname.Normalize();
     m_filename = fname.GetFullPath().ToUTF8();
+    m_resolver.SetProjectDir( fname.GetPath() );
 
     try
     {
@@ -148,8 +149,6 @@ bool KICADPCB::ReadFile( const wxString& aFileName )
 
             return false;
         }
-
-        m_resolver.SetProjectDir( fname.GetPath() );
 
         if( !parsePCB( data ) )
             return false;

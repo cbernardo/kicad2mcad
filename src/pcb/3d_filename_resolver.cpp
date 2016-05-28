@@ -52,7 +52,6 @@ static wxCriticalSection lock3D_resolver;
 
 static bool getHollerith( const std::string& aString, size_t& aIndex, wxString& aResult );
 
-
 S3D_FILENAME_RESOLVER::S3D_FILENAME_RESOLVER()
 {
     m_errflags = 0;
@@ -117,6 +116,7 @@ bool S3D_FILENAME_RESOLVER::SetProjectDir( const wxString& aProjDir, bool* flgCh
         return false;
 
     m_curProjDir = projdir.GetPath();
+    wxSetEnv( "KIPRJMOD", m_curProjDir );
 
     if( flgChanged )
         *flgChanged = false;
@@ -336,18 +336,27 @@ wxString S3D_FILENAME_RESOLVER::ResolvePath( const wxString& aFileName )
     tname.Replace( wxT( "/" ), wxT( "\\" ) );
     #endif
 
+    // Note: variable expansion must be performed using a threadsafe
+    // wrapper for the getenv() system call. If we allow the
+    // wxFileName::Normalize() routine to perform expansion then
+    // we will have a race condition since wxWidgets does not assure
+    // a threadsafe wrapper for getenv().
+    if( tname.StartsWith( wxT( "${" ) ) || tname.StartsWith( wxT( "$(" ) ) )
+        tname = wxExpandEnvVars( tname );
+
     wxFileName tmpFN( tname );
 
     // in the case of absolute filenames we don't store a map item
-    if( !aFileName.StartsWith( wxT( "${" ) ) && tmpFN.IsAbsolute() )
+    if( !aFileName.StartsWith( "${" ) && !aFileName.StartsWith( "$(" )
+        && !aFileName.StartsWith( ":" ) && tmpFN.IsAbsolute() )
     {
+        tmpFN.Normalize();
+
         if( tmpFN.FileExists() )
-            return tname;
+            return tmpFN.GetFullPath();
 
         return wxEmptyString;
     }
-
-    tmpFN.Normalize();
 
     // this case covers full paths, leading expanded vars, and paths
     // relative to the current working directory (which is not necessarily
@@ -401,6 +410,9 @@ wxString S3D_FILENAME_RESOLVER::ResolvePath( const wxString& aFileName )
         tmpFN.Assign( sPL->m_pathexp, "" );
         wxString fullPath = tmpFN.GetPathWithSep() + tname;
 
+        if( fullPath.StartsWith( "${" ) || fullPath.StartsWith( "$(" ) )
+            fullPath = wxExpandEnvVars( fullPath );
+
         if( wxFileName::FileExists( fullPath ) )
         {
             tmpFN.Assign( fullPath );
@@ -420,6 +432,7 @@ wxString S3D_FILENAME_RESOLVER::ResolvePath( const wxString& aFileName )
         wxString fullPath( "${KISYS3DMOD}" );
         fullPath.Append( fpath.GetPathSeparator() );
         fullPath.Append( tname );
+        fullPath = wxExpandEnvVars( fullPath );
         fpath.Assign( fullPath );
 
         if( fpath.Normalize() && fpath.FileExists() )
@@ -433,7 +446,7 @@ wxString S3D_FILENAME_RESOLVER::ResolvePath( const wxString& aFileName )
 
     // ${ENV_VAR} paths have already been checked; skip them
     while( sPL != ePL && ( sPL->m_alias.StartsWith( "${" )
-        || sPL->m_alias.StartsWith( "$(" ) ) )
+                           || sPL->m_alias.StartsWith( "$(" ) ) )
         ++sPL;
 
     // at this point the filename must contain an alias or else it is invalid
@@ -463,6 +476,9 @@ wxString S3D_FILENAME_RESOLVER::ResolvePath( const wxString& aFileName )
             wxFileName fpath( wxFileName::DirName( sPL->m_pathexp ) );
             wxString fullPath = fpath.GetPathWithSep() + relpath;
 
+            if( fullPath.StartsWith( "${") || fullPath.StartsWith( "$(" ) )
+                fullPath = wxExpandEnvVars( fullPath );
+
             if( wxFileName::FileExists( fullPath ) )
             {
                 wxFileName tmp( fullPath );
@@ -471,7 +487,6 @@ wxString S3D_FILENAME_RESOLVER::ResolvePath( const wxString& aFileName )
                     tname = tmp.GetFullPath();
 
                 m_NameMap.insert( std::pair< wxString, wxString > ( aFileName, tname ) );
-
                 return tname;
             }
         }
