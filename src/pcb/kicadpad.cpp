@@ -139,12 +139,11 @@ bool KICADPAD::parseDrill( SEXPR::SEXPR* aDrill )
         return false;
     }
 
-    if( ++idx == nchild )
-    {
-        m_drill.size.x = x;
-        m_drill.size.y = x;
+    m_drill.size.x = x;
+    m_drill.size.y = x;
+
+    if( ++idx == nchild || !m_drill.oval )
         return true;
-    }
 
     for( int i = idx; i < nchild; ++i )
     {
@@ -169,7 +168,6 @@ bool KICADPAD::parseDrill( SEXPR::SEXPR* aDrill )
                 return false;
             }
 
-            m_drill.size.x = x;
             m_drill.size.y = y;
         }
     }
