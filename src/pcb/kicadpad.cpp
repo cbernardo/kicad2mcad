@@ -65,7 +65,8 @@ bool KICADPAD::Read( SEXPR::SEXPR* aEntry )
     {
         child = aEntry->GetChild( i );
 
-        if( child->IsSymbol() && child->GetSymbol() == "thru_hole" )
+        if( child->IsSymbol() &&
+            ( child->GetSymbol() == "thru_hole" || child->GetSymbol() == "np_thru_hole" ) )
         {
             m_thruhole = true;
             continue;

@@ -939,7 +939,7 @@ bool PCBMODEL::getModelLocation( bool aBottom, DOUBLET aPosition, double aRotati
 
     // offset (inches)
     aOffset.x *= 25.4;
-    aOffset.y *= -25.4;
+    aOffset.y *= 25.4;
     aOffset.z *= 25.4 + BOARD_OFFSET;
     gp_Trsf lRot;
 
