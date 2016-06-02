@@ -58,9 +58,9 @@ static const wxCmdLineEntryDesc cmdLineDesc[] =
     {
         { wxCMD_LINE_OPTION, "f", NULL, "input file name",
             wxCMD_LINE_VAL_STRING, wxCMD_LINE_OPTION_MANDATORY },
-        { wxCMD_LINE_OPTION, "i", NULL, "IGES output (default STEP)",
+        { wxCMD_LINE_SWITCH, "i", NULL, "IGES output (default STEP)",
             wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL },
-        { wxCMD_LINE_OPTION, "w", NULL, "overwrite output file",
+        { wxCMD_LINE_SWITCH, "w", NULL, "overwrite output file",
             wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL },
         { wxCMD_LINE_OPTION, "x", NULL, "X origin of board",
             wxCMD_LINE_VAL_DOUBLE, wxCMD_LINE_PARAM_OPTIONAL },

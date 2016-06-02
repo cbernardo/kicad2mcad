@@ -37,10 +37,14 @@
 
 #include <IGESCAFControl_Reader.hxx>
 #include <IGESCAFControl_Writer.hxx>
+#include <IGESControl_Controller.hxx>
+#include <IGESData_GlobalSection.hxx>
+#include <IGESData_IGESModel.hxx>
 #include <Interface_Static.hxx>
 #include <Quantity_Color.hxx>
 #include <STEPCAFControl_Reader.hxx>
 #include <STEPCAFControl_Writer.hxx>
+#include <APIHeaderSection_MakeHeader.hxx>
 #include <TCollection_ExtendedString.hxx>
 #include <TDataStd_Name.hxx>
 #include <TDF_LabelSequence.hxx>
@@ -813,12 +817,19 @@ bool PCBMODEL::WriteIGES( const std::string& aFileName, bool aOverwrite )
         return false;
     }
 
+    wxFileName fn( aFileName );
+    IGESControl_Controller::Init();
     IGESCAFControl_Writer writer;
     writer.SetColorMode( Standard_True );
     writer.SetNameMode( Standard_True );
+    IGESData_GlobalSection header = writer.Model()->GlobalSection();
+    header.SetFileName( new TCollection_HAsciiString( fn.GetFullName().ToUTF8() ) );
+    header.SetSendName( new TCollection_HAsciiString( "KiCad electronic assembly" ) );
+    header.SetAuthorName( new TCollection_HAsciiString( Interface_Static::CVal( "write.iges.header.author" ) ) );
+    header.SetCompanyName( new TCollection_HAsciiString( Interface_Static::CVal( "write.iges.header.company" ) ) );
+    writer.Model()->SetGlobalSection( header );
 
-    if( Standard_False == writer.Transfer( m_doc )
-        || Standard_False == writer.Write( aFileName.c_str() ) )
+    if( Standard_False == writer.Perform( m_doc, aFileName.c_str() ) )
         return false;
 
     return true;
@@ -841,8 +852,19 @@ bool PCBMODEL::WriteSTEP( const std::string& aFileName, bool aOverwrite )
     writer.SetColorMode( Standard_True );
     writer.SetNameMode( Standard_True );
 
-    if( Standard_False == writer.Transfer( m_doc, STEPControl_AsIs )
-        || Standard_False == writer.Write( aFileName.c_str() ) )
+    if( Standard_False == writer.Transfer( m_doc, STEPControl_AsIs ) )
+        return false;
+
+    APIHeaderSection_MakeHeader hdr( writer.ChangeWriter().Model() );
+    wxFileName fn( aFileName );
+    hdr.SetName( new TCollection_HAsciiString( fn.GetFullName().ToUTF8() ) );
+    // XXX - how to control and ensure consistency with IGES?
+    hdr.SetAuthorValue( 1, new TCollection_HAsciiString( "An Author" ) );
+    hdr.SetOrganizationValue( 1, new TCollection_HAsciiString( "A Company" ) );
+    hdr.SetOriginatingSystem( new TCollection_HAsciiString( "KiCad to STEP converter" ) );
+    hdr.SetDescriptionValue( 1, new TCollection_HAsciiString( "KiCad electronic assembly" ) );
+
+    if( Standard_False == writer.Write( aFileName.c_str() ) )
         return false;
 
     return true;
@@ -979,6 +1001,7 @@ bool PCBMODEL::getModelLocation( bool aBottom, DOUBLET aPosition, double aRotati
 
 bool PCBMODEL::readIGES( Handle( TDocStd_Document )& doc, const char* fname )
 {
+    IGESControl_Controller::Init();
     IGESCAFControl_Reader reader;
     IFSelect_ReturnStatus stat  = reader.ReadFile( fname );
 
@@ -1120,7 +1143,7 @@ TDF_Label PCBMODEL::transferModel( Handle( TDocStd_Document )& source,
 
             // check for per-solid colors
             stop.Init( shape, TopAbs_SOLID );
-            dtop.Init( d_assy->GetShape( niulab ), TopAbs_SOLID );
+            dtop.Init( d_assy->GetShape( niulab ), TopAbs_SOLID, TopAbs_FACE );
 
             while( stop.More() && dtop.More() )
             {
@@ -1142,8 +1165,7 @@ TDF_Label PCBMODEL::transferModel( Handle( TDocStd_Document )& source,
                           || scolor->GetColor( stop.Current(), XCAFDoc_ColorGen, face_color )
                           || scolor->GetColor( stop.Current(), XCAFDoc_ColorCurv, face_color ) )
                 {
-
-                    dcolor->SetColor( dtop.Current(), face_color, XCAFDoc_ColorGen );
+                    dcolor->SetColor( dtop.Current(), face_color, XCAFDoc_ColorSurf );
                 }
 
                 stop.Next();
