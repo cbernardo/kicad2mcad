@@ -4,7 +4,7 @@ include_directories(
         ${OCE_INCLUDE_DIRS}
 )
 
-add_executable( mtest
+add_executable( kicad2step
     kicad2mcad.cpp
     pcb/3d_filename_resolver.cpp
     pcb/base.cpp
@@ -18,4 +18,8 @@ add_executable( mtest
     sexpr/sexpr_parser.cpp
 )
 
-target_link_libraries( mtest ${wxWidgets_LIBRARIES} ${LIBS_OCE} )
+target_link_libraries( kicad2step ${wxWidgets_LIBRARIES} ${LIBS_OCE} )
+
+install( TARGETS kicad2step
+        DESTINATION bin
+        COMPONENT binary )
