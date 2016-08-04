@@ -107,6 +107,8 @@ private:
      */
     void checkEnvVarPath( const wxString& aPath );
 
+    wxString expandVars( const wxString& aPath );
+
 public:
     S3D_FILENAME_RESOLVER();
 

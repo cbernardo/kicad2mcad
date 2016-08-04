@@ -72,6 +72,7 @@ bool S3D_FILENAME_RESOLVER::Set3DConfigDir( const wxString& aConfigDir )
     wxFileName kcom( cfgdir.GetPath(), "" );
     kcom.RemoveLastDir();
     kcom.SetFullName( "kicad_common" );
+    wxUniChar psep = wxFileName::GetPathSeparator();
 
     if( kcom.FileExists() )
     {
@@ -88,7 +89,19 @@ bool S3D_FILENAME_RESOLVER::Set3DConfigDir( const wxString& aConfigDir )
             while( cfg->GetNextEntry( entry, idx ) )
             {
                 val = cfg->Read( entry, "" );
-                m_EnvVars.insert( std::pair< wxString, wxString >( entry, val ) );
+
+                if( val.Last() == psep )
+                    val = val.substr( 0, val.length() -1 );
+
+                // only add the EnvVar if it is not currently defined by the shell
+                wxString subst = "${";
+                subst.append( entry );
+                subst.append( "}" );
+                wxString exvar = wxExpandEnvVars( subst );
+
+                if( exvar == subst )
+                    m_EnvVars.insert(std::pair< wxString, wxString >(entry, val));
+
                 entry.clear();
                 val.clear();
             }
@@ -336,13 +349,13 @@ wxString S3D_FILENAME_RESOLVER::ResolvePath( const wxString& aFileName )
     tname.Replace( wxT( "/" ), wxT( "\\" ) );
     #endif
 
-    // Note: variable expansion must be performed using a threadsafe
-    // wrapper for the getenv() system call. If we allow the
+    // Note: variable expansion must preferably be performed via a
+    // threadsafe wrapper for the getenv() system call. If we allow the
     // wxFileName::Normalize() routine to perform expansion then
     // we will have a race condition since wxWidgets does not assure
     // a threadsafe wrapper for getenv().
     if( tname.StartsWith( wxT( "${" ) ) || tname.StartsWith( wxT( "$(" ) ) )
-        tname = wxExpandEnvVars( tname );
+        tname = expandVars( tname );
 
     wxFileName tmpFN( tname );
 
@@ -411,7 +424,7 @@ wxString S3D_FILENAME_RESOLVER::ResolvePath( const wxString& aFileName )
         wxString fullPath = tmpFN.GetPathWithSep() + tname;
 
         if( fullPath.StartsWith( "${" ) || fullPath.StartsWith( "$(" ) )
-            fullPath = wxExpandEnvVars( fullPath );
+            fullPath = expandVars( fullPath );
 
         if( wxFileName::FileExists( fullPath ) )
         {
@@ -432,7 +445,7 @@ wxString S3D_FILENAME_RESOLVER::ResolvePath( const wxString& aFileName )
         wxString fullPath( "${KISYS3DMOD}" );
         fullPath.Append( fpath.GetPathSeparator() );
         fullPath.Append( tname );
-        fullPath = wxExpandEnvVars( fullPath );
+        fullPath = expandVars( fullPath );
         fpath.Assign( fullPath );
 
         if( fpath.Normalize() && fpath.FileExists() )
@@ -477,7 +490,7 @@ wxString S3D_FILENAME_RESOLVER::ResolvePath( const wxString& aFileName )
             wxString fullPath = fpath.GetPathWithSep() + relpath;
 
             if( fullPath.StartsWith( "${") || fullPath.StartsWith( "$(" ) )
-                fullPath = wxExpandEnvVars( fullPath );
+                fullPath = expandVars( fullPath );
 
             if( wxFileName::FileExists( fullPath ) )
             {
@@ -841,6 +854,32 @@ void S3D_FILENAME_RESOLVER::checkEnvVarPath( const wxString& aPath )
 
     m_Paths.insert( sPL, lpath );
     return;
+}
+
+
+wxString S3D_FILENAME_RESOLVER::expandVars( const wxString& aPath )
+{
+    if( aPath.empty() )
+        return wxEmptyString;
+
+    wxString result;
+
+    for( auto i: m_EnvVars )
+    {
+        if( !aPath.compare( 2, i.first.length(), i.first ) )
+        {
+            result = i.second;
+            result.append( aPath.substr( 3 + i.first.length() ) );
+
+            if( result.StartsWith( "${" ) || result.StartsWith( "$(" ) )
+                result = wxExpandEnvVars( result );
+
+            return result;
+        }
+    }
+
+    result = wxExpandEnvVars( aPath );
+    return result;
 }
 
 
