@@ -872,13 +872,20 @@ wxString S3D_FILENAME_RESOLVER::expandVars( const wxString& aPath )
             result.append( aPath.substr( 3 + i.first.length() ) );
 
             if( result.StartsWith( "${" ) || result.StartsWith( "$(" ) )
-                result = wxExpandEnvVars( result );
+                result = expandVars( result );
 
             return result;
         }
     }
 
     result = wxExpandEnvVars( aPath );
+
+    if( result == aPath )
+        return wxEmptyString;
+
+    if( result.StartsWith( "${" ) || result.StartsWith( "$(" ) )
+        result = expandVars( result );
+
     return result;
 }
 
