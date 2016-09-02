@@ -176,13 +176,6 @@ bool KICADPCB::ReadFile( const wxString& aFileName )
 }
 
 
-void KICADPCB::SetLogging( bool aUseLog )
-{
-    // XXX - TO BE IMPLEMENTED
-    return;
-}
-
-
 bool KICADPCB::WriteSTEP( const wxString& aFileName, bool aOverwrite )
 {
     if( m_pcb )
@@ -195,6 +188,7 @@ bool KICADPCB::WriteSTEP( const wxString& aFileName, bool aOverwrite )
 }
 
 
+#ifdef SUPPORTS_IGES
 bool KICADPCB::WriteIGES( const wxString& aFileName, bool aOverwrite )
 {
     if( m_pcb )
@@ -205,6 +199,7 @@ bool KICADPCB::WriteIGES( const wxString& aFileName, bool aOverwrite )
 
     return false;
 }
+#endif
 
 
 bool KICADPCB::parsePCB( SEXPR::SEXPR* data )

@@ -84,10 +84,6 @@
 // min. length**2 below which 2 points are considered coincident
 #define MIN_LENGTH2 (0.0001)
 
-// XXX - TEST ONLY
-static void printSeg( KICADCURVE& aCurve );
-static void printSegs( std::list< KICADCURVE >& curves );
-
 static void getEndPoints( const KICADCURVE& aCurve, double& spx0, double& spy0,
     double& epx0, double& epy0 )
 {
@@ -417,26 +413,6 @@ bool PCBMODEL::AddOutlineSegment( KICADCURVE* aCurve )
             return false;
     }
 
-    std::cerr << "** XXX: Added a segment [";
-    switch( aCurve->m_form )
-    {
-        case CURVE_LINE:
-            std::cerr << "LINE]\n";
-            break;
-
-        case CURVE_CIRCLE:
-            std::cerr << "CIRCLE]\n";
-            break;
-
-        case CURVE_ARC:
-            std::cerr << "ARC]\n";
-            break;
-
-        default:
-            std::cerr << "UNKNOWN]\n";
-            break;
-    }
-
     return true;
 }
 
@@ -733,7 +709,6 @@ bool PCBMODEL::CreatePCB()
             std::ostringstream ostr;
             ostr << __FILE__ << ": " << __FUNCTION__ << ": " << __LINE__ << "\n";
             ostr << "  * could not close outline (dropping outline data with " << oln.m_curves.size() << " segments)\n";
-            printSegs( oln.m_curves );
             wxLogMessage( "%s\n", ostr.str().c_str() );
             oln.Clear();
 
@@ -805,6 +780,7 @@ bool PCBMODEL::CreatePCB()
 }
 
 
+#ifdef SUPPORTS_IGES
 // write the assembly model in IGES format
 bool PCBMODEL::WriteIGES( const std::string& aFileName, bool aOverwrite )
 {
@@ -834,6 +810,7 @@ bool PCBMODEL::WriteIGES( const std::string& aFileName, bool aOverwrite )
 
     return true;
 }
+#endif
 
 
 // write the assembly model in STEP format
@@ -858,7 +835,7 @@ bool PCBMODEL::WriteSTEP( const std::string& aFileName, bool aOverwrite )
     APIHeaderSection_MakeHeader hdr( writer.ChangeWriter().Model() );
     wxFileName fn( aFileName );
     hdr.SetName( new TCollection_HAsciiString( fn.GetFullName().ToUTF8() ) );
-    // XXX - how to control and ensure consistency with IGES?
+    // TODO: how to control and ensure consistency with IGES?
     hdr.SetAuthorValue( 1, new TCollection_HAsciiString( "An Author" ) );
     hdr.SetOrganizationValue( 1, new TCollection_HAsciiString( "A Company" ) );
     hdr.SetOriginatingSystem( new TCollection_HAsciiString( "KiCad to STEP converter" ) );
@@ -1285,49 +1262,6 @@ bool OUTLINE::AddSegment( const KICADCURVE& aCurve )
 
     // this curve is not an end segment of the current loop
     return false;
-}
-
-void printSegs( std::list< KICADCURVE >& curves )
-{
-    // XXX - TEST ONLY
-    for( auto i : curves )
-        printSeg( i );
-
-    return;
-}
-
-
-void printSeg( KICADCURVE& aCurve )
-{
-    switch( aCurve.m_form )
-    {
-        case CURVE_LINE:
-            std::cerr << "    [LINE]\n";
-            std::cerr << "        start(" << aCurve.m_start.x << ", " << aCurve.m_start.y << ")\n";
-            std::cerr << "        end(" << aCurve.m_end.x << ", " << aCurve.m_end.y << ")\n";
-            break;
-
-        case CURVE_CIRCLE:
-            std::cerr << "    [CIRCLE]\n";
-            std::cerr << "        center(" << aCurve.m_start.x << ", " << aCurve.m_start.y << ")\n";
-            std::cerr << "         start(" << aCurve.m_end.x << ", " << aCurve.m_end.y << ")\n";
-            std::cerr << "          rad: " << aCurve.m_radius << "\n";
-            break;
-
-        case CURVE_ARC:
-            std::cerr << "    [ARC]\n";
-            std::cerr << "        center(" << aCurve.m_start.x << ", " << aCurve.m_start.y << ")\n";
-            std::cerr << "         start(" << aCurve.m_end.x << ", " << aCurve.m_end.y << ")\n";
-            std::cerr << "           end(" << aCurve.m_ep.x << ", " << aCurve.m_ep.y << ")\n";
-            std::cerr << "          rad: " << aCurve.m_radius << "\n";
-            std::cerr << "        angle: " << (aCurve.m_angle * 180.0 / M_PI) << "\n";
-            break;
-
-        default:
-            std::cerr << "    [UNKNOWN]\n";
-            break;
-    }
-
 }
 
 

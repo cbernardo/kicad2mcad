@@ -21,12 +21,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  */
 
-/**
- * TODO:
- * 1. At the moment the resolver is not aware of any locally
- * defined paths which may be set via pcbnew->ConfigurePaths()
- */
-
 #include <wx/app.h>
 #include <wx/cmdline.h>
 #include <wx/log.h>
@@ -47,7 +41,9 @@ public:
     virtual bool OnCmdLineParsed(wxCmdLineParser& parser);
 
 private:
+#ifdef SUPPORTS_IGES
     bool     m_fmtIGES;
+#endif
     bool     m_overwrite;
     wxString m_filename;
     double   m_xOrigin;
@@ -58,8 +54,10 @@ static const wxCmdLineEntryDesc cmdLineDesc[] =
     {
         { wxCMD_LINE_OPTION, "f", NULL, "input file name",
             wxCMD_LINE_VAL_STRING, wxCMD_LINE_OPTION_MANDATORY },
+#ifdef SUPPORTS_IGES
         { wxCMD_LINE_SWITCH, "i", NULL, "IGES output (default STEP)",
             wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL },
+#endif
         { wxCMD_LINE_SWITCH, "w", NULL, "overwrite output file",
             wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL },
         { wxCMD_LINE_OPTION, "x", NULL, "X origin of board",
@@ -77,7 +75,9 @@ wxIMPLEMENT_APP_CONSOLE( KICAD2MCAD );
 
 bool KICAD2MCAD::OnInit()
 {
+#ifdef SUPPORTS_IGES
     m_fmtIGES = false;
+#endif
     m_overwrite = false;
     m_xOrigin = 0.0;
     m_yOrigin = 0.0;
@@ -99,8 +99,10 @@ void KICAD2MCAD::OnInitCmdLine( wxCmdLineParser& parser )
 
 bool KICAD2MCAD::OnCmdLineParsed( wxCmdLineParser& parser )
 {
-    if( parser.Found( "i" ) )
+    #ifdef SUPPORTS_IGES
+      if( parser.Found( "i" ) )
         m_fmtIGES = true;
+    #endif
 
     if( parser.Found( "w" ) )
         m_overwrite = true;
@@ -130,9 +132,11 @@ int KICAD2MCAD::OnRun()
         return -1;
     }
 
+#ifdef SUPPORTS_IGES
     if( m_fmtIGES )
         fname.SetExt( "igs" );
     else
+#endif
         fname.SetExt( "stp" );
 
     wxString outfile = fname.GetFullPath();
@@ -148,9 +152,11 @@ int KICAD2MCAD::OnRun()
         {
             pcb.ComposePCB();
 
+        #ifdef SUPPORTS_IGES
             if( m_fmtIGES )
                 res = pcb.WriteIGES( outfile, m_overwrite );
             else
+        #endif
                 res = pcb.WriteSTEP( outfile, m_overwrite );
 
             if( !res )

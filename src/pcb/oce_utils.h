@@ -30,6 +30,7 @@
 #include <utility>
 #include <vector>
 #include "base.h"
+#include "kicadpcb.h"
 #include "kicadcurve.h"
 
 #include <BRepBuilderAPI_MakeWire.hxx>
@@ -126,8 +127,10 @@ public:
     // create the PCB model using the current outlines and drill holes
     bool CreatePCB();
 
+#ifdef SUPPORTS_IGES
     // write the assembly model in IGES format
     bool WriteIGES( const std::string& aFileName, bool aOverwrite );
+#endif
 
     // write the assembly model in STEP format
     bool WriteSTEP( const std::string& aFileName, bool aOverwrite );

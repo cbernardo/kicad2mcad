@@ -35,6 +35,10 @@
 #include "3d_filename_resolver.h"
 #include "base.h"
 
+#ifdef SUPPORTS_IGES
+#undef SUPPORTS_IGES
+#endif
+
 namespace SEXPR
 {
     class SEXPR;
@@ -74,9 +78,10 @@ public:
 
     bool ReadFile( const wxString& aFileName );
     bool ComposePCB();
-    void SetLogging( bool aUseLog );
     bool WriteSTEP( const wxString& aFileName, bool aOverwrite );
+    #ifdef SUPPORTS_IGES
     bool WriteIGES( const wxString& aFileName, bool aOverwrite );
+    #endif
 };
 
 
