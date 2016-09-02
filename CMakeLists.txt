@@ -284,11 +284,6 @@ include( ${wxWidgets_USE_FILE} )
 # Always defined, empty if no libraries are to be built
 add_custom_target( lib-dependencies )
 
-#
-# Find GLM library, required
-#
-find_package( GLM 0.9.5.1 REQUIRED )
-
 set( LIBS_OCE TKXDEIGES TKXDESTEP )
 
 find_package( OCE 0.16 COMPONENTS ${LIBS_OCE} REQUIRED )

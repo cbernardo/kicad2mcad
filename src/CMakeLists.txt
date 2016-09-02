@@ -1,6 +1,5 @@
 include_directories(
         pcb
-        ${GLM_INCLUDE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${OCE_INCLUDE_DIRS}
 )

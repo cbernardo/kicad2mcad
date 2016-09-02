@@ -21,9 +21,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  */
 
-#define  GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
-#include <glm/ext.hpp>
 #include <algorithm>
 #include <cmath>
 #include <sstream>
